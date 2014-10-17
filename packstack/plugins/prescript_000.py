@@ -217,6 +217,24 @@ def initConfig(controller):
              "NEED_CONFIRM": False,
              "CONDITION": False},
 
+            {"CMD_OPTION": "os-ironic-install",
+             "USAGE": (
+                "Set to 'y' if you would like Packstack to install "
+                "OpenStack Orchestration (Ironic)"
+             ),
+             "PROMPT": (
+                "Should Packstack install OpenStack Orchestration (Ironic)"
+             ),
+             "OPTION_LIST": ["y", "n"],
+             "VALIDATORS": [validators.validate_options],
+             "DEFAULT_VALUE": "n",
+             "MASK_INPUT": False,
+             "LOOSE_VALIDATION": False,
+             "CONF_NAME": "CONFIG_IRONIC_INSTALL",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": False,
+             "CONDITION": False},
+
             {"CMD_OPTION": "os-heat-install",
              "USAGE": (
                 "Set to 'y' if you would like Packstack to install "

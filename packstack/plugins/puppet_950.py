@@ -163,12 +163,12 @@ def install_deps(config, messages):
 def copy_puppet_modules(config, messages):
     os_modules = ' '.join(('apache', 'ceilometer', 'certmonger', 'cinder',
                            'concat', 'firewall', 'glance', 'heat', 'horizon',
-                           'inifile', 'keystone', 'memcached', 'mongodb',
-                           'mysql', 'neutron', 'nova', 'nssdb', 'openstack',
-                           'packstack', 'qpid', 'rabbitmq', 'remote', 'rsync',
-                           'ssh', 'stdlib', 'swift', 'sysctl', 'tempest',
-                           'vcsrepo', 'vlan', 'vswitch', 'xinetd',
-                           'openstacklib'))
+                           'inifile', 'ironic', 'keystone', 'memcached',
+                           'mongodb', 'mysql', 'neutron', 'nova', 'nssdb',
+                           'openstack', 'packstack', 'qpid', 'rabbitmq',
+                           'remote', 'rsync', 'ssh', 'stdlib', 'swift',
+                           'sysctl', 'tempest', 'vcsrepo', 'vlan', 'vswitch',
+                           'xinetd', 'openstacklib'))
 
         # write puppet manifest to disk
     manifestfiles.writeManifests()
