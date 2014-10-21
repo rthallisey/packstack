@@ -1,5 +1,6 @@
 
 class {'ironic':
+    rpc_backend => 'ironic.openstack.common.rpc.impl_kombu',
     rabbit_host      => "%(CONFIG_AMQP_HOST)s",
     rabbit_port      => '%(CONFIG_AMQP_CLIENTS_PORT)s',
     rabbit_userid    => '%(CONFIG_AMQP_AUTH_USER)s',
