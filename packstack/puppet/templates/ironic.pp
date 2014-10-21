@@ -6,7 +6,7 @@ $deploy_ramdisk = 'glance://deploy_ramdisk_uuid'
 #$db_name = 'ironic'
 
 
-class { 'ironic':
+class { 'ironic::api':
   #    db_name => $db_name,
   auth_host => "%(CONFIG_CONTROLLER_HOST)s",
   admin_password => "%(CONFIG_IRONIC_KS_PW)s",
@@ -14,7 +14,7 @@ class { 'ironic':
 #  rabbit_hosts => $rabbit_hosts,
 
 }
-class { 'ironic::api': }
+class { 'ironic': }
 
 class { 'ironic::conductor': }
 
