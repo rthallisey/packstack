@@ -35,7 +35,8 @@ def initConfig(controller):
 
     ironic_params = {
         "IRONIC": [
-            {"CMD_OPTION": "ironic-db-passwd",
+            {"CONF_NAME": "CONFIG_IRONIC_DB_PW",
+             "CMD_OPTION": "ironic-db-passwd",
              "USAGE": "The password to use for the Ironic to access DB",
              "PROMPT": "Enter the password for the Ironic DB access",
              "OPTION_LIST": [],
@@ -49,7 +50,8 @@ def initConfig(controller):
              "NEED_CONFIRM": True,
              "CONDITION": False},
 
-            {"CMD_OPTION": "ironic-ks-passwd",
+            {"CONF_NAME": "CONFIG_IRONIC_KS_PW",
+             "CMD_OPTION": "ironic-ks-passwd",
              "USAGE": ("The password to use for the Ironic to authenticate "
                        "with Keystone"),
              "PROMPT": "Enter the password for the Ironic Keystone access",
@@ -63,6 +65,32 @@ def initConfig(controller):
              "USE_DEFAULT": False,
              "NEED_CONFIRM": True,
              "CONDITION": False},
+
+            {"CONF_NAME": "CONFIG_IRONIC_NOVA_PW",
+             "CMD_OPTION": "os-ironic-nova-passwd",
+             "USAGE": "The password to use when Ironic connects to Nova",
+             "PROMPT": "Enter the password for Ironic to use to connect to Nova",
+             "OPTION_LIST": [],
+             "VALIDATORS": [],
+             "DEFAULT_VALUE": "", # default is going to be the admin pass
+             "MASK_INPUT": True,
+             "LOOSE_VALIDATION": False,
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": True,
+             "CONDITION": False},
+
+            {"CONF_NAME": "CONFIG_IRONIC_DATASTORES",
+             "CMD_OPTION": "os-ironic-datastores",
+             "USAGE": "A comma-separated list of Ironic datastores",
+             "PROMPT": "Enter a comma-separated list of Ironic datastores",
+             "OPTION_LIST": ['cassandra', 'couchbase', 'mongodb', 'mysql', 'postgresql', 'redis'],
+             "VALIDATORS": [validators.validate_multi_options],
+             "DEFAULT_VALUE": "redis",
+             "MASK_INPUT": False,
+             "LOOSE_VALIDATION": False,
+             "USE_DEFAULT": True,
+             "NEED_CONFIRM": False,
+             "CONDITION": False},
         ],
     }
 
@@ -74,9 +102,9 @@ def initConfig(controller):
          "POST_CONDITION": False,
          "POST_CONDITION_MATCH": True},
     ]
-    for group in ironic_groups:
-        params = ironic_params[group["GROUP_NAME"]]
-        controller.addGroup(group, params)
+#    for group in ironic_groups:
+#        params = ironic_params[group["GROUP_NAME"]]
+        controller.addGroup(group, ironic_params)
 
 
 def initSequences(controller):
@@ -84,10 +112,10 @@ def initSequences(controller):
         return
 
     steps = [
-        {'title': 'Adding Ironic manifest entries',
-         'functions': [create_manifest]},
         {'title': 'Adding Ironic Keystone manifest entries',
          'functions': [create_keystone_manifest]},
+        {'title': 'Adding Ironic manifest entries',
+         'functions': [create_manifest]},
 #        {'title': 'Adding Ironic Conductor manifest entries',
 #         'functions': [create_conductor_manifest]},
 #        {'title': 'Creating ssh keys for Ironic migration',
@@ -105,19 +133,27 @@ def initSequences(controller):
 #-------------------------- step functions --------------------------
 
 def create_manifest(config, messages):
+    if (config['CONFIG_IRONIC_NOVA_USER'] == 'admin' and
+          config['CONFIG_IRONIC_NOVA_PW'] == ''):
+        config['CONFIG_IRONIC_NOVA_PW'] = config['CONFIG_KEYSTONE_ADMIN_PW']
+
     manifestfile = "%s_ironic.pp" % config['CONFIG_CONTROLLER_HOST']
     manifestdata = getManifestTemplate(get_mq(config, "ironic"))
     manifestdata = getManifestTemplate("ironic.pp")
-    config['FIREWALL_SERVICE_NAME'] = "ironic"
-    config['FIREWALL_PORTS'] = "['8773', '8774', '8775']"
+
+    config['FIREWALL_SERVICE_NAME'] = "ironic-api"
+    config['FIREWALL_PORTS'] = "['6385']"
     config['FIREWALL_CHAIN'] = "INPUT"
     config['FIREWALL_PROTOCOL'] = 'tcp'
     config['FIREWALL_ALLOWED'] = "'ALL'"
-    config['FIREWALL_SERVICE_ID'] = "ironic"
+    config['FIREWALL_SERVICE_ID'] = "ironic-api"
     manifestdata += getManifestTemplate("firewall.pp")
-    appendManifestFile(manifestfile, manifestdata)
+    appendManifestFile(manifestfile, manifestdata, 'pre')
 
 def create_keystone_manifest(config, messages):
+    if config['CONFIG_UNSUPPORTED'] != 'y':
+        config['CONFIG_IRONIC_HOST'] = config['CONFIG_CONTROLLER_HOST']
+
     manifestfile = "%s_keystone.pp" % config['CONFIG_CONTROLLER_HOST']
     manifestdata = getManifestTemplate("keystone_ironic.pp")
     appendManifestFile(manifestfile, manifestdata)
