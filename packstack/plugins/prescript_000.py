@@ -220,10 +220,10 @@ def initConfig(controller):
             {"CMD_OPTION": "os-ironic-install",
              "USAGE": (
                 "Set to 'y' if you would like Packstack to install "
-                "OpenStack Orchestration (Ironic)"
+                "OpenStack Bare Metal (Ironic)"
              ),
              "PROMPT": (
-                "Should Packstack install OpenStack Orchestration (Ironic)"
+                "Should Packstack install OpenStack Bare Metal (Ironic)"
              ),
              "OPTION_LIST": ["y", "n"],
              "VALIDATORS": [validators.validate_options],
@@ -363,6 +363,7 @@ def initConfig(controller):
                             'CONFIG_GLANCE_HOST',
                             'CONFIG_HORIZON_HOST',
                             'CONFIG_HEAT_HOST',
+                            'CONFIG_IRONIC_HOST',
                             'CONFIG_KEYSTONE_HOST',
                             'CONFIG_NAGIOS_HOST',
                             'CONFIG_NEUTRON_SERVER_HOST',
