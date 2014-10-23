@@ -39,6 +39,9 @@ Global Options
 **CONFIG_SWIFT_INSTALL**
     Set to 'y' if you would like Packstack to install Swift ['y', 'n'].
 
+**CONFIG_IRONIC_INSTALL**
+    Set to 'y' if you would like Packstack to install Ironic ['y', 'n'].
+
 **CONFIG_CLIENT_INSTALL**
     Set to 'y' if you would like Packstack to install the OpenStack Client packages. An admin "rc" file will also be installed ['y', 'n'].
 
@@ -64,7 +67,7 @@ Global Options
     Set to 'y' if you would like Packstack to install MariaDB.
 
 **CONFIG_CONTROLLER_HOST**
-    The IP address of the server on which to install OpenStack services specific to controller role such as API servers, Horizon, etc. This parameter replaced following deprecated parameters: CONFIG_CEILOMETER_HOST, CONFIG_CINDER_HOST, CONFIG_GLANCE_HOST, CONFIG_HORIZON_HOST, CONFIG_HEAT_HOST, CONFIG_KEYSTONE_HOST, CONFIG_NAGIOS_HOST, CONFIG_NEUTRON_SERVER_HOST, CONFIG_NEUTRON_LBAAS_HOSTS, CONFIG_NOVA_API_HOST, CONFIG_NOVA_CERT_HOST, CONFIG_NOVA_VNCPROXY_HOST, CONFIG_NOVA_SCHED_HOST, CONFIG_OSCLIENT_HOST, CONFIG_SWIFT_PROXY_HOSTS.
+    The IP address of the server on which to install OpenStack services specific to controller role such as API servers, Horizon, etc. This parameter replaced following deprecated parameters: CONFIG_CEILOMETER_HOST, CONFIG_CINDER_HOST, CONFIG_GLANCE_HOST, CONFIG_HORIZON_HOST, CONFIG_HEAT_HOST, CONFIG_IRONIC_HOST, CONFIG_KEYSTONE_HOST, CONFIG_NAGIOS_HOST, CONFIG_NEUTRON_SERVER_HOST, CONFIG_NEUTRON_LBAAS_HOSTS, CONFIG_NOVA_API_HOST, CONFIG_NOVA_CERT_HOST, CONFIG_NOVA_VNCPROXY_HOST, CONFIG_NOVA_SCHED_HOST, CONFIG_OSCLIENT_HOST, CONFIG_SWIFT_PROXY_HOSTS.
 
 **CONFIG_COMPUTE_HOSTS**
     The list of IP addresses of the server on which to install the Nova compute service. This parameter replaced following deprecated parameters: CONFIG_NOVA_COMPUTE_HOSTS.
@@ -314,6 +317,24 @@ Nova Options
 
 **CONFIG_NOVA_NETWORK_VLAN_START**
     First VLAN for private networks.
+
+Ironic Config Parameters
+----------------------
+
+**CONFIG_IRONIC_DB_PW**
+    The password used by Ironic user to authenticate against MariaDB.
+
+**CONFIG_IRONIC_KS_PW**
+    The password to use for the Ironic to authenticate with Keystone.
+
+**CONFIG_IRONIC_DOMAIN**
+    Name of Keystone domain for Ironic. By default, the value is **ironic**.
+
+**CONFIG_IRONIC_DOMAIN_ADMIN**
+    Name of Keystone domain admin user for Ironic. By default, the value is **ironic_admin**.
+
+**CONFIG_IRONIC_DOMAIN_PASSWORD**
+    Password for Keystone domain admin user for Ironic.
 
 OpenStack Horizon Config parameters
 -----------------------------------
