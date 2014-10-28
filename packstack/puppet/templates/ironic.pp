@@ -9,4 +9,3 @@ class { 'ironic::api':
 
 class { 'ironic::conductor':
 }
-

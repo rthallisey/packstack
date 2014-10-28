@@ -266,6 +266,85 @@ def initConfig(controller):
              "NEED_CONFIRM": False,
              "CONDITION": False},
         ],
+
+        "IRONIC": [
+            {"CMD_OPTION": "nova-ironic-user",
+             "USAGE": "The admin user that connects Ironic to Nova",
+             "PROMPT": "Enter the user for Ironic to use to connect to Nova",
+             "OPTION_LIST": [],
+             "VALIDATORS": [validators.validate_not_empty],
+             "DEFAULT_VALUE": "admin",
+             "PROCESSORS": [processors.process_password],
+             "MASK_INPUT": True,
+             "LOOSE_VALIDATION": False,
+             "CONF_NAME": "CONFIG_NOVA_IRONIC_USER",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": True,
+             "CONDITION": False},
+
+            {"CMD_OPTION": "nova-ironic-passwd",
+             "USAGE": ("The password to use for the Ironic to authenticate "
+                       "with Nova"),
+             "PROMPT": "Enter the password for the Ironic Nova access",
+             "OPTION_LIST": [],
+             "VALIDATORS": [validators.validate_not_empty],
+             "DEFAULT_VALUE": "PW_PLACEHOLDER",
+             "PROCESSORS": [processors.process_password],
+             "MASK_INPUT": True,
+             "LOOSE_VALIDATION": False,
+             "CONF_NAME": "CONFIG_NOVA-IRONIC_PW",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": True,
+             "CONDITION": False},
+
+            {"CMD_OPTION": "ironicsched-cpu-allocation-ratio",
+             "USAGE": ("The overcommitment ratio for virtual to physical CPUs."
+                       " Set to 1.0 to disable CPU overcommitment"),
+             "PROMPT": "Enter the CPU overcommitment ratio. Set to 1.0 to "
+                       "disable CPU overcommitment",
+             "OPTION_LIST": [],
+             "VALIDATORS": [validators.validate_float],
+             "DEFAULT_VALUE": 16.0,
+             "MASK_INPUT": False,
+             "LOOSE_VALIDATION": True,
+             "CONF_NAME": "CONFIG_IRONIC_SCHED_CPU_ALLOC_RATIO",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": False,
+             "CONDITION": False},
+
+            {"CMD_OPTION": "ironicsched-ram-allocation-ratio",
+             "USAGE": ("The overcommitment ratio for virtual to physical RAM. "
+                       "Set to 1.0 to disable RAM overcommitment"),
+             "PROMPT": ("Enter the RAM overcommitment ratio. Set to 1.0 to "
+                        "disable RAM overcommitment"),
+             "OPTION_LIST": [],
+             "VALIDATORS": [validators.validate_float],
+             "DEFAULT_VALUE": 1.5,
+             "MASK_INPUT": False,
+             "LOOSE_VALIDATION": True,
+             "CONF_NAME": "CONFIG_IRONIC_SCHED_RAM_ALLOC_RATIO",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": False,
+             "CONDITION": False},
+
+            {"CMD_OPTION": "ironiccompute-migrate-protocol",
+             "USAGE": ("Protocol used for instance migration. Allowed values "
+                       "are tcp and ssh. Note that by defaul ironic user is "
+                       "created with /sbin/nologin shell so that ssh protocol "
+                       "won't be working. To make ssh protocol work you have "
+                       "to fix ironic user on compute hosts manually."),
+             "PROMPT": ("Enter protocol which will be used for instance "
+                        "migration"),
+             "OPTION_LIST": ['tcp', 'ssh'],
+             "VALIDATORS": [validators.validate_options],
+             "DEFAULT_VALUE": 'tcp',
+             "MASK_INPUT": False,
+             "LOOSE_VALIDATION": True,
+             "CONF_NAME": "CONFIG_IRONIC_COMPUTE_MIGRATE_PROTOCOL",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": False,
+             "CONDITION": False},
+        ],
     }
 
     def use_nova_network(config):
@@ -507,10 +586,14 @@ def create_compute_manifest(config, messages):
                                                  % (host, c_host))
             manifestdata += getManifestTemplate("firewall.pp")
 
+        #(NEEDS FIX) if vmware and ironic are both enabled will have an issue?
         if config['CONFIG_VMWARE_BACKEND'] == 'y':
             manifestdata += getManifestTemplate("nova_compute_vmware.pp")
+        elif config['CONFIG_IRONIC_INSTALL'] == 'y':
+            manifestdata += getManifestTemplate("nova_ironic.pp")
         else:
             manifestdata += getManifestTemplate("nova_compute_libvirt.pp")
+
         if (config['CONFIG_VMWARE_BACKEND'] != 'y' and
                 config['CONFIG_CINDER_INSTALL'] == 'y' and
                 'gluster' in config['CONFIG_CINDER_BACKEND']):
@@ -519,6 +602,7 @@ def create_compute_manifest(config, messages):
                 config['CONFIG_CINDER_INSTALL'] == 'y' and
                 'nfs' in config['CONFIG_CINDER_BACKEND']):
             manifestdata += getManifestTemplate("nova_nfs.pp")
+
         manifestfile = "%s_nova.pp" % host
 
         nova_config_options = NovaConfig()
@@ -598,7 +682,14 @@ def create_network_manifest(config, messages):
 
 def create_sched_manifest(config, messages):
     manifestfile = "%s_nova.pp" % config['CONFIG_CONTROLLER_HOST']
-    manifestdata = getManifestTemplate("nova_sched.pp")
+    if config['CONFIG_IRONIC_INSTALL'] == 'y':
+        manifestdata = getManifestTemplate("nova_sched_ironic.pp")
+        ram_alloc = '1.0'
+        config['CONFIG_NOVA_SCHED_RAM_ALLOC_RATIO'] = ram_alloc
+        manifestdata += getManifestTemplate("nova_sched.pp")
+    else:
+        manifestdata = getManifestTemplate("nova_sched.pp")
+
     appendManifestFile(manifestfile, manifestdata)
 
 
@@ -648,8 +739,12 @@ def create_neutron_manifest(config, messages):
     if config['CONFIG_NEUTRON_INSTALL'] != "y":
         return
 
-    virt_driver = 'nova.virt.libvirt.vif.LibvirtGenericVIFDriver'
-    config['CONFIG_NOVA_LIBVIRT_VIF_DRIVER'] = virt_driver
+    if config['CONFIG_IRONIC_INSTALL'] == 'y':
+        virt_driver = 'nova.virt.firewall.NoopFirewallDriver'
+        config['CONFIG_NOVA_LIBVIRT_VIF_DRIVER'] = virt_driver
+    else:
+        virt_driver = 'nova.virt.libvirt.vif.LibvirtGenericVIFDriver'
+        config['CONFIG_NOVA_LIBVIRT_VIF_DRIVER'] = virt_driver
 
     for manifestfile, marker in manifestfiles.getFiles():
         if manifestfile.endswith("_nova.pp"):
