@@ -549,6 +549,17 @@ def initSequences(controller):
     config = controller.CONF
     if config['CONFIG_NEUTRON_INSTALL'] != 'y':
         return
+    if config['CONFIG_IRONIC_INSTALL'] == 'y':
+         config['CONFIG_NEUTRON_L2_PLUGIN'] == 'ml2'
+         config['CONFIG_NEUTRON_ML2_TYPE_DRIVERS'] += ', flat'
+         config['CONFIG_NEUTRON_ML2_TENANT_NETWORK_TYPES'] += ', flat'
+         config['CONFIG_NEUTRON_ML2_MECHANISM_DRIVERS'] = 'openvswitch'
+         config['CONFIG_NEUTRON_ML2_FLAT_NETWORKS'] = 'physnet1'
+         #config['CONFIG_NEUTRON_ML2_VLAN_RANGES'] = 'physnet1'
+
+#    if config['CONFIG_IRONIC_INSTALL'] == 'y':
+#        config['CONFIG_NEUTRON_ML2_TYPE_DRIVERS'] = 'flat'
+#        config['CONFIG_NEUTRON_ML2_FLAT_NETWORKS'] = 'physnet1'
 
     if config['CONFIG_NEUTRON_L2_PLUGIN'] == 'openvswitch':
         plugin_db = 'ovs_neutron'
@@ -910,6 +921,10 @@ def create_l2_agent_manifests(config, messages):
         else:
             raise RuntimeError('Invalid combination of plugin and agent.')
         template_name = "neutron_ovs_agent_%s.pp" % ovs_type
+
+        if config['CONFIG_IRONIC_INSTALL'] == 'y':
+#            config["CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS"] = 'physnet1:br-eth2'
+            config['CONFIG_NEUTRON_ML2_VLAN_RANGES'] = 'physnet1'
 
         bm_arr = get_values(config["CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS"])
         iface_arr = get_values(config["CONFIG_NEUTRON_OVS_BRIDGE_IFACES"])

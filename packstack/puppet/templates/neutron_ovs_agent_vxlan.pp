@@ -14,6 +14,7 @@ if '%(CONFIG_NEUTRON_L2_PLUGIN)s' == 'ml2' {
     local_ip         => $localip,
     vxlan_udp_port   => %(CONFIG_NEUTRON_OVS_VXLAN_UDP_PORT)s,
     l2_population    => %(CONFIG_NEUTRON_USE_L2POPULATION)s,
+    ovs_network_vlan_ranges  => "physnet1",
   }
 } else {
   class { 'neutron::agents::ovs':
