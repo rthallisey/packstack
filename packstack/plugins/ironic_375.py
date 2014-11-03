@@ -16,8 +16,8 @@ from packstack.installer.exceptions import ScriptRuntimeError
 from packstack.modules.common import filtered_hosts
 from packstack.modules.shortcuts import get_mq
 from packstack.modules.ospluginutils import (getManifestTemplate,
-                                             appendManifestFile, manifestfiles)
-
+                                             appendManifestFile, manifestfiles,
+                                             createFirewallResources)
 
 #------------------ Ironic installer initialization ------------------
 
@@ -149,14 +149,19 @@ def create_manifest(config, messages):
     manifestdata = getManifestTemplate(get_mq(config, "ironic"))
     manifestdata += getManifestTemplate("ironic.pp")
 
-    config['FIREWALL_SERVICE_NAME'] = "ironic-api"
-    config['FIREWALL_PORTS'] = "'6385'"
-    config['FIREWALL_CHAIN'] = "INPUT"
-    config['FIREWALL_PROTOCOL'] = 'tcp'
-    config['FIREWALL_ALLOWED'] = "'ALL'"
-    config['FIREWALL_SERVICE_ID'] = "ironic-api"
-    manifestdata += getManifestTemplate("firewall.pp")
+    fw_details = dict()
+    key = "ironic-api"
+    fw_details.setdefault(key, {})
+    fw_details[key]['host'] = "ALL"
+    fw_details[key]['service_name'] = "ironic-api"
+    fw_details[key]['chain'] = "INPUT"
+    fw_details[key]['ports'] = ['6386']
+    fw_details[key]['proto'] = "tcp"
+    config['FIREWALL_IRONIC_API_RULES'] = fw_details
+
+    manifestdata += createFirewallResources('FIREWALL_IRONIC_API_RULES')
     appendManifestFile(manifestfile, manifestdata, 'pre')
+
 
 def create_keystone_manifest(config, messages):
     if config['CONFIG_UNSUPPORTED'] != 'y':

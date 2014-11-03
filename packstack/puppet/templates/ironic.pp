@@ -1,11 +1,10 @@
 ironic_config {
-  "glance/glance_host": value => "%(CONFIG_STORAGE_HOST)s";
+  "glance/glance_host": value => hiera('CONFIG_STORAGE_HOST');
 }
 
 class { 'ironic::api':
-  auth_host => "%(CONFIG_CONTROLLER_HOST)s",
-  admin_password => "%(CONFIG_IRONIC_KS_PW)s",
+  auth_host => hiera('CONFIG_CONTROLLER_HOST'),
+  admin_password => hiera('CONFIG_IRONIC_KS_PW'),
 }
 
-class { 'ironic::conductor':
-}
+class { 'ironic::conductor': }

@@ -1,12 +1,14 @@
+$ironic_qpid_cfg_ironic_db_pw = hiera('CONFIG_IRONIC_DB_PW')
+$ironic_qpid_cfg_mariadb_host = hiera('CONFIG_MARIADB_HOST')
 
 class {'ironic':
     rpc_backend => 'ironic.openstack.common.rpc.impl_qpid',
-    qpid_hostname => "%(CONFIG_AMQP_HOST)s",
-    qpid_port => '%(CONFIG_AMQP_CLIENTS_PORT)s',
-    qpid_protocol => '%(CONFIG_AMQP_PROTOCOL)s',
-    qpid_username => '%(CONFIG_AMQP_AUTH_USER)s',
-    qpid_password => '%(CONFIG_AMQP_AUTH_PASSWORD)s',
-    database_connection => 'mysql://ironic:%(CONFIG_IRONIC_DB_PW)s@%(CONFIG_MARIADB_HOST)s/ironic',
+    qpid_hostname => hiera('CONFIG_AMQP_HOST'),
+    qpid_port => hiera('CONFIG_AMQP_CLIENTS_PORT'),
+    qpid_protocol => hiera('CONFIG_AMQP_PROTOCOL'),
+    qpid_username => hiera('CONFIG_AMQP_AUTH_USER'),
+    qpid_password => hiera('CONFIG_AMQP_AUTH_PASSWORD'),
+    database_connection => "mysql://ironic:${ironic_qpid_cfg_ironic_db_pw}@${ironic_qpid_cfg_mariadb_host}/ironic",
     debug  => True
     verbose  => True
 }

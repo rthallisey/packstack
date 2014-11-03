@@ -1,5 +1,5 @@
 class {"ironic::db::mysql":
-  password      => "%(CONFIG_IRONIC_DB_PW)s",
+  password      => hiera('CONFIG_IRONIC_DB_PW'),
   host          => "%%",
   allowed_hosts => "%%",
   charset       => "utf8",
