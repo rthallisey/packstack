@@ -1,6 +1,6 @@
 $ironic_cfg_ctrl_host = hiera('CONFIG_CONTROLLER_HOST')
 #Should these be hardcoded?
-class {"nova::ironic":
+class {"nova::compute::ironic":
   admin_user        => "admin",
   admin_passwd      => hiera('CONFIG_KEYSTONE_ADMIN_PW'),
   admin_url         => "http://${ironic_cfg_ctrl_host}:35357/v2.0",
