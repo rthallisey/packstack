@@ -8,3 +8,5 @@ class { 'ironic::api':
 }
 
 class { 'ironic::conductor': }
+
+class { 'ironic::client': }

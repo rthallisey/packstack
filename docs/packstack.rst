@@ -327,14 +327,14 @@ Ironic Config Parameters
 **CONFIG_IRONIC_KS_PW**
     The password to use for the Ironic to authenticate with Keystone.
 
-**CONFIG_IRONIC_DOMAIN**
-    Name of Keystone domain for Ironic. By default, the value is **ironic**.
+**CONFIG_IRONIC_NOVA_USER**
+    Name of Ironic user that connects to Nova.
 
-**CONFIG_IRONIC_DOMAIN_ADMIN**
-    Name of Keystone domain admin user for Ironic. By default, the value is **ironic_admin**.
+**CONFIG_IRONIC_NOVA_TENANT**
+    Name of Nova tenant that Ironic connects to.
 
-**CONFIG_IRONIC_DOMAIN_PASSWORD**
-    Password for Keystone domain admin user for Ironic.
+**CONFIG_IRONIC_NOVA_PW**
+    The password used by Ironic to connect to Nova.
 
 OpenStack Horizon Config parameters
 -----------------------------------
