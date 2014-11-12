@@ -217,24 +217,6 @@ def initConfig(controller):
              "NEED_CONFIRM": False,
              "CONDITION": False},
 
-            {"CMD_OPTION": "os-ironic-install",
-             "USAGE": (
-                "Set to 'y' if you would like Packstack to install "
-                "OpenStack Bare Metal (Ironic)"
-             ),
-             "PROMPT": (
-                "Should Packstack install OpenStack Bare Metal (Ironic)"
-             ),
-             "OPTION_LIST": ["y", "n"],
-             "VALIDATORS": [validators.validate_options],
-             "DEFAULT_VALUE": "y",
-             "MASK_INPUT": False,
-             "LOOSE_VALIDATION": False,
-             "CONF_NAME": "CONFIG_IRONIC_INSTALL",
-             "USE_DEFAULT": False,
-             "NEED_CONFIRM": False,
-             "CONDITION": False},
-
             {"CMD_OPTION": "os-heat-install",
              "USAGE": (
                 "Set to 'y' if you would like Packstack to install "
@@ -249,6 +231,24 @@ def initConfig(controller):
              "MASK_INPUT": False,
              "LOOSE_VALIDATION": False,
              "CONF_NAME": "CONFIG_HEAT_INSTALL",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": False,
+             "CONDITION": False},
+
+            {"CMD_OPTION": "os-ironic-install",
+             "USAGE": (
+                "Set to 'y' if you would like Packstack to install "
+                "OpenStack Bare Metal (Ironic)"
+             ),
+             "PROMPT": (
+                "Should Packstack install OpenStack Bare Metal (Ironic)"
+             ),
+             "OPTION_LIST": ["y", "n"],
+             "VALIDATORS": [validators.validate_options],
+             "DEFAULT_VALUE": "y",
+             "MASK_INPUT": False,
+             "LOOSE_VALIDATION": False,
+             "CONF_NAME": "CONFIG_IRONIC_INSTALL",
              "USE_DEFAULT": False,
              "NEED_CONFIRM": False,
              "CONDITION": False},
@@ -685,7 +685,7 @@ def discover(config, messages):
 
 def create_manifest(config, messages):
     key = 'CONFIG_DEBUG_MODE'
-    config[key] = config[key] == 'y' and 'true' or 'false'
+    config[key] = config[key] == 'y' and True or False
 
     for hostname in filtered_hosts(config):
         manifestfile = "%s_prescript.pp" % hostname
@@ -703,8 +703,20 @@ def create_ntp_manifest(config, messages):
     config['CONFIG_NTP_SERVER_DEF'] = '%s\n' % definiton
 
     marker = uuid.uuid4().hex[:16]
+
     for hostname in filtered_hosts(config):
-        manifestdata = getManifestTemplate('ntpd.pp')
-        appendManifestFile('%s_ntpd.pp' % hostname,
-                           manifestdata,
-                           marker=marker)
+        releaseos = config['HOST_DETAILS'][hostname]['os']
+        releasever = config['HOST_DETAILS'][hostname]['release'].split('.')[0]
+
+        # Configure chrony for Fedora or RHEL/CentOS 7
+        if releaseos == 'Fedora' or releasever == '7':
+            manifestdata = getManifestTemplate('chrony.pp')
+            appendManifestFile('%s_chrony.pp' % hostname,
+                               manifestdata,
+                               marker=marker)
+        # For previous versions, configure ntpd
+        else:
+            manifestdata = getManifestTemplate('ntpd.pp')
+            appendManifestFile('%s_ntpd.pp' % hostname,
+                               manifestdata,
+                               marker=marker)
