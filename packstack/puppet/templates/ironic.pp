@@ -7,4 +7,6 @@ class { 'ironic::api':
   admin_password => hiera('CONFIG_IRONIC_KS_PW'),
 }
 
+class { 'ironic::client': }
+
 class { 'ironic::conductor': }

@@ -524,9 +524,10 @@ def create_compute_manifest(config, messages):
         if config['CONFIG_VMWARE_BACKEND'] == 'y':
             manifestdata += getManifestTemplate("nova_compute_vmware.pp")
         elif config['CONFIG_IRONIC_INSTALL'] == 'y':
-            manifestdata += getManifestTemplate("nova_ironic.pp")
+            manifestdata += getManifestTemplate("nova_compute_ironic.pp")
         else:
             manifestdata += getManifestTemplate("nova_compute_libvirt.pp")
+
         if (config['CONFIG_VMWARE_BACKEND'] != 'y' and
                 config['CONFIG_CINDER_INSTALL'] == 'y' and
                 'gluster' in config['CONFIG_CINDER_BACKEND']):

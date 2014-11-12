@@ -1,5 +1,5 @@
 
-class {"nova::ironic":
+class {"nova::compute::ironic":
   admin_user        => "admin",
   admin_passwd      => "%(CONFIG_KEYSTONE_ADMIN_PW)s",
   admin_url         => "http://%(CONFIG_CONTROLLER_HOST)s:35357/v2.0",
