@@ -38,7 +38,7 @@ def initConfig(controller):
          "USE_DEFAULT": True,
          "NEED_CONFIRM": True,
          "CONDITION": False},
-        
+
         {"CONF_NAME": "CONFIG_IRONIC_KS_PW",
          "CMD_OPTION": "os-ironic-ks-passwd",
          "USAGE": ("The password to use for Ironic to authenticate "
@@ -52,7 +52,7 @@ def initConfig(controller):
          "USE_DEFAULT": True,
          "NEED_CONFIRM": True,
          "CONDITION": False},
-        
+
         {"CONF_NAME": "CONFIG_IRONIC_NOVA_USER",
          "CMD_OPTION": "os-ironic-nova-user",
          "USAGE": "The user to use when Ironic connects to Nova",
@@ -65,11 +65,11 @@ def initConfig(controller):
          "USE_DEFAULT": True,
          "NEED_CONFIRM": True,
          "CONDITION": False},
-        
+
         {"CONF_NAME": "CONFIG_IRONIC_NOVA_TENANT",
          "CMD_OPTION": "os-ironic-nova-tenant",
          "USAGE": "The tenant to use when Ironic connects to Nova",
-         "PROMPT": "Enter the tenant for Ironic to use to connect to Nova",
+         "PROMPT": "The tenant for Ironic to use to connect to Nova",
          "OPTION_LIST": [],
          "VALIDATORS": [validators.validate_not_empty],
          "DEFAULT_VALUE": "service",
@@ -78,25 +78,26 @@ def initConfig(controller):
          "USE_DEFAULT": True,
          "NEED_CONFIRM": True,
          "CONDITION": False},
-        
+
         {"CONF_NAME": "CONFIG_IRONIC_NOVA_PW",
          "CMD_OPTION": "os-ironic-nova-passwd",
          "USAGE": "The password to use when Ironic connects to Nova",
-         "PROMPT": "Enter the password for Ironic to use to connect to Nova",
+         "PROMPT": "The password for Ironic to use to connect to Nova",
          "OPTION_LIST": [],
          "VALIDATORS": [],
-         "DEFAULT_VALUE": "", # <- admin pass
+         "DEFAULT_VALUE": "",
          "MASK_INPUT": True,
          "LOOSE_VALIDATION": False,
          "USE_DEFAULT": False,
          "NEED_CONFIRM": True,
          "CONDITION": False},
-        
+
         {"CONF_NAME": "CONFIG_IRONIC_DATASTORES",
          "CMD_OPTION": "os-ironic-datastores",
          "USAGE": "A comma-separated list of Ironic datastores",
          "PROMPT": "Enter a comma-separated list of Ironic datastores",
-         "OPTION_LIST": ['cassandra', 'couchbase', 'mongodb', 'mysql', 'postgresql', 'redis'],
+         "OPTION_LIST": ['cassandra', 'couchbase', 'mongodb', 'mysql',
+                         'postgresql', 'redis'],
          "VALIDATORS": [validators.validate_multi_options],
          "DEFAULT_VALUE": "redis",
          "MASK_INPUT": False,
@@ -105,7 +106,7 @@ def initConfig(controller):
          "NEED_CONFIRM": False,
          "CONDITION": False},
     ]
-    
+
     ironic_group = {"GROUP_NAME": "IRONIC",
                     "DESCRIPTION": "Ironic Options",
                     "PRE_CONDITION": "CONFIG_IRONIC_INSTALL",
@@ -125,10 +126,6 @@ def initSequences(controller):
          'functions': [create_keystone_manifest]},
         {'title': 'Adding Ironic manifest entries',
          'functions': [create_manifest]},
-#        {'title': 'Adding Ironic Conductor manifest entries',
-#         'functions': [create_conductor_manifest]},
-#        {'title': 'Adding Ironic Common manifest entries',
-#         'functions': [create_common_manifest]},
     ]
 
     controller.addSequence("Installing OpenStack Ironic", [], [],
@@ -141,7 +138,7 @@ def create_manifest(config, messages):
     if (config['CONFIG_IRONIC_NOVA_USER'] == 'admin' and
           config['CONFIG_IRONIC_NOVA_PW'] == ''):
         config['CONFIG_IRONIC_NOVA_PW'] = config['CONFIG_KEYSTONE_ADMIN_PW']
-    
+
     if config['CONFIG_UNSUPPORTED'] != 'y':
         config['CONFIG_STORAGE_HOST'] = config['CONFIG_CONTROLLER_HOST']
 
@@ -170,10 +167,3 @@ def create_keystone_manifest(config, messages):
     manifestfile = "%s_keystone.pp" % config['CONFIG_CONTROLLER_HOST']
     manifestdata = getManifestTemplate("keystone_ironic.pp")
     appendManifestFile(manifestfile, manifestdata)
-
-#def create_conductor_manifest(config, messages):
-#    manifestfile = "%s_ironic.pp" % config['CONFIG_CONTROLLER_HOST']
-#    manifestdata = getManifestTemplate("ironic_conductor.pp")
-#    appendManifestFile(manifestfile, manifestdata)
-
-
