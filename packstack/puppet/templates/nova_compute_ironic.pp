@@ -1,8 +1,9 @@
+$ironic_config_controller_host = hiera('CONFIG_CONTROLLER_HOST')
 
-class {"nova::compute::ironic":
-  admin_user        => "admin",
-  admin_passwd      => "%(CONFIG_KEYSTONE_ADMIN_PW)s",
-  admin_url         => "http://%(CONFIG_CONTROLLER_HOST)s:35357/v2.0",
-  admin_tenant_name => "services",
-  api_endpoint      => "http://%(CONFIG_CONTROLLER_HOST)s:6385/v1",
+class {'nova::compute::ironic':
+  admin_user        => 'admin',
+  admin_passwd      => hiera('CONFIG_KEYSTONE_ADMIN_PW'),
+  admin_url         => "http://${ironic_config_controller_host}:35357/v2.0",
+  admin_tenant_name => 'services',
+  api_endpoint      => "http://${ironic_config_controller_host}:6385/v1",
 }
