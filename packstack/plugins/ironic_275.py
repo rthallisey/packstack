@@ -1,25 +1,17 @@
 # -*- coding: utf-8 -*-
 
 """
-Installs and configures ironic
+Installs and configures Ironic
 """
 
-#import os
-import uuid
-#import logging
-#import platform
-#import socket
+from packstack.installer import utils, validators, processors
 
-from packstack.installer import utils, validators #basedefs, processors, utils, validators
-#from packstack.installer.exceptions import ScriptRuntimeError
-
-#from packstack.modules.common import filtered_hosts
 from packstack.modules.shortcuts import get_mq
 from packstack.modules.ospluginutils import (getManifestTemplate,
-                                             appendManifestFile, #manifestfiles,
+                                             appendManifestFile,
                                              createFirewallResources)
 
-#------------------ Ironic installer initialization ------------------
+# ------------------ Ironic Packstack Plugin initialization ------------------
 
 PLUGIN_NAME = "OS-Ironic"
 PLUGIN_NAME_COLORED = utils.color_text(PLUGIN_NAME, 'blue')
@@ -135,7 +127,7 @@ def initSequences(controller):
                            steps)
 
 
-#-------------------------- step functions --------------------------
+# -------------------------- step functions --------------------------
 
 def create_manifest(config, messages):
     if (config['CONFIG_IRONIC_NOVA_USER'] == 'admin' and

@@ -433,7 +433,8 @@ def initSequences(controller):
     if config['CONFIG_IRONIC_INSTALL'] == 'y':
         config['CONFIG_NEUTRON_ML2_TYPE_DRIVERS'] += ', flat'
         config['CONFIG_NEUTRON_ML2_TENANT_NETWORK_TYPES'] += ', flat'
-        config['CONFIG_NEUTRON_ML2_MECHANISM_DRIVERS'] = 'openvswitch'
+        if 'openvswitch' not in config['CONFIG_NEUTRON_ML2_MECHANISM_DRIVERS']:
+            config['CONFIG_NEUTRON_ML2_MECHANISM_DRIVERS'] += 'openvswitch'
         config['CONFIG_NEUTRON_ML2_FLAT_NETWORKS'] = 'physnet1'
 
     plugin_db = 'neutron'
@@ -748,9 +749,6 @@ def create_l2_agent_manifests(config, messages):
         config["CONFIG_NEUTRON_OVS_TUNNELING"] = tunnel
         tunnel_types = set(ovs_type) & set(['gre', 'vxlan'])
         config["CONFIG_NEUTRON_OVS_TUNNEL_TYPES"] = list(tunnel_types)
-
-        if config['CONFIG_IRONIC_INSTALL'] == 'y':
-            config['CONFIG_NEUTRON_ML2_VLAN_RANGES'] = 'physnet1:1000:2999'
 
         template_name = "neutron_ovs_agent.pp"
 
