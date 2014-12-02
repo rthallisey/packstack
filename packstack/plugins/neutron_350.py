@@ -748,13 +748,14 @@ def create_l2_agent_manifests(config, messages):
         config["CONFIG_NEUTRON_OVS_TUNNELING"] = tunnel
         tunnel_types = set(ovs_type) & set(['gre', 'vxlan'])
         config["CONFIG_NEUTRON_OVS_TUNNEL_TYPES"] = list(tunnel_types)
+
+        if config['CONFIG_IRONIC_INSTALL'] == 'y':
+            config['CONFIG_NEUTRON_ML2_VLAN_RANGES'] = 'physnet1:1000:2999'
+
         template_name = "neutron_ovs_agent.pp"
 
         bm_arr = get_values(config["CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS"])
         iface_arr = get_values(config["CONFIG_NEUTRON_OVS_BRIDGE_IFACES"])
-
-        if config['CONFIG_IRONIC_INSTALL'] == 'y':
-            config['CONFIG_NEUTRON_ML2_VLAN_RANGES'] = 'physnet1'
 
         # The CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS parameter contains a
         # comma-separated list of bridge mappings. Since the puppet module
