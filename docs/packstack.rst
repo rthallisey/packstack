@@ -14,9 +14,11 @@ Packstack is a utility that uses uses puppet modules to install OpenStack. It ca
 
 - packstack
 - packstack [options]
-- packstack --gen-answer-file=<file>  / packstack --answer-file=<file>
+- packstack --gen-answer-file=<file> [--default-password=<passwd>] / packstack --answer-file=<file>
 
-The third option allows the user to generate a default answer file, edit the default options and finally run Packstack a second time using this answer file. This is the easiest way to run Packstack and the one that will be documented here. When <file> is created the OPTIONS below will be contained and can be edited by the user.
+The third option allows the user to generate a default answer file, edit the default options and finally run Packstack a second time using this answer file. This is the easiest way to run Packstack and the one that will be documented here. Optionally, it is possible to specify a default password when generating the answer file, and this default password will be used for all accounts.
+
+When <file> is created, it will contain the OPTIONS below, which can then be edited by the user.
 
 OPTIONS
 =======
@@ -318,23 +320,14 @@ Nova Options
 **CONFIG_NOVA_NETWORK_VLAN_START**
     First VLAN for private networks.
 
-Ironic Config Parameters
-----------------------
+Ironic Config parameters
+-----------------------------------
 
 **CONFIG_IRONIC_DB_PW**
     The password used by Ironic user to authenticate against MariaDB.
 
 **CONFIG_IRONIC_KS_PW**
     The password to use for the Ironic to authenticate with Keystone.
-
-**CONFIG_IRONIC_DOMAIN**
-    Name of Keystone domain for Ironic. By default, the value is **ironic**.
-
-**CONFIG_IRONIC_DOMAIN_ADMIN**
-    Name of Keystone domain admin user for Ironic. By default, the value is **ironic_admin**.
-
-**CONFIG_IRONIC_DOMAIN_PASSWORD**
-    Password for Keystone domain admin user for Ironic.
 
 OpenStack Horizon Config parameters
 -----------------------------------
@@ -376,7 +369,7 @@ Server Prepare Configs
 ----------------------
 
 **CONFIG_USE_EPEL**
-    Install OpenStack from EPEL. If set to "y" EPEL will be installed on each server ['y', 'n'].
+    Install OpenStack from EPEL. If set to "y" EPEL will be installed on each server ['y', 'n']. When installing RDO, this option will be overriden, as EPEL is a requirement for RDO.
 
 **CONFIG_REPO**
     A comma separated list of URLs to any additional yum repositories to install.
@@ -453,9 +446,6 @@ Heat Config Parameters
 **CONFIG_HEAT_KS_PW**
     The password to use for the Heat to authenticate with Keystone.
 
-**CONFIG_HEAT_USING_TRUSTS**
-    Set to 'y' if you would like Packstack to install heat with trusts as deferred auth method.  If not, the stored password method will be used.
-
 **CONFIG_HEAT_CLOUDWATCH_INSTALL**
     Set to 'y' if you would like Packstack to install Heat CloudWatch API.
 
@@ -483,38 +473,20 @@ Neutron Config Parameters
 **CONFIG_NEUTRON_L3_EXT_BRIDGE**
     The name of the bridge that the Neutron L3 agent will use for external traffic, or 'provider' if using provider networks.
 
-**CONFIG_NEUTRON_L2_PLUGIN**
-    The name of the L2 plugin to be used with Neutron. (eg. linuxbridge, openvswitch, ml2).
-
 **CONFIG_NEUTRON_METADATA_PW**
     A comma separated list of IP addresses on which to install Neutron metadata agent.
 
 **CONFIG_NEUTRON_FWAAS**
     Whether to configure neutron Firewall as a Service.
 
-**CONFIG_NEUTRON_LB_TENANT_NETWORK_TYPE**
-    The type of network to allocate for tenant networks (eg. vlan, local, gre).
-
-**CONFIG_NEUTRON_LB_VLAN_RANGES**
-    A comma separated list of VLAN ranges for the Neutron linuxbridge plugin (eg. physnet1:1:4094,physnet2,physnet3:3000:3999).
-
 **CONFIG_NEUTRON_LB_INTERFACE_MAPPINGS**
     A comma separated list of interface mappings for the Neutron linuxbridge plugin (eg. physnet1:br-eth1,physnet2:br-eth2,physnet3:br-eth3).
-
-**CONFIG_NEUTRON_OVS_TENANT_NETWORK_TYPE**
-    Type of network to allocate for tenant networks (eg. vlan, local, gre).
-
-**CONFIG_NEUTRON_OVS_VLAN_RANGES**
-    A comma separated list of VLAN ranges for the Neutron openvswitch plugin (eg. physnet1:1:4094,physnet2,physnet3:3000:3999).
 
 **CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS**
     A comma separated list of bridge mappings for the Neutron openvswitch plugin (eg. physnet1:br-eth1,physnet2:br-eth2,physnet3:br-eth3).
 
 **CONFIG_NEUTRON_OVS_BRIDGE_IFACES**
     A comma separated list of colon-separated OVS brid.
-
-**CONFIG_NEUTRON_OVS_TUNNEL_RANGES**
-    A comma separated list of tunnel ranges for the Neutron openvswitch plugin.
 
 **CONFIG_NEUTRON_OVS_TUNNEL_IF**
     Override the IP used for GRE tunnels on this hypervisor to the IP found on the specified interface (defaults to the HOST IP).
@@ -556,6 +528,9 @@ Provision Config Parameters
 **CONFIG_PROVISION_DEMO_FLOATRANGE**
     The CIDR network address for the floating IP subnet.
 
+**CONFIG_PROVISION_CIRROS_URL**
+    A URL or local file location for the Cirros demo image used for Glance.
+
 **CONFIG_PROVISION_TEMPEST**
     Whether to configure tempest for testing.
 
@@ -570,7 +545,6 @@ Provision Config Parameters
 
 **CONFIG_PROVISION_TEMPEST_REPO_URI**
     The uri of the tempest git repository to use.
-
 
 Log files and Debug info
 ------------------------

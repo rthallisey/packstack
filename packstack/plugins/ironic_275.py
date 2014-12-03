@@ -46,60 +46,6 @@ def initConfig(controller):
          "USE_DEFAULT": True,
          "NEED_CONFIRM": True,
          "CONDITION": False},
-
-        {"CONF_NAME": "CONFIG_IRONIC_NOVA_USER",
-         "CMD_OPTION": "os-ironic-nova-user",
-         "USAGE": "The user to use when Ironic connects to Nova",
-         "PROMPT": "Enter the user for Ironic to use to connect to Nova",
-         "OPTION_LIST": [],
-         "VALIDATORS": [validators.validate_not_empty],
-         "DEFAULT_VALUE": "admin",
-         "MASK_INPUT": False,
-         "LOOSE_VALIDATION": False,
-         "USE_DEFAULT": True,
-         "NEED_CONFIRM": True,
-         "CONDITION": False},
-
-        {"CONF_NAME": "CONFIG_IRONIC_NOVA_TENANT",
-         "CMD_OPTION": "os-ironic-nova-tenant",
-         "USAGE": "The tenant to use when Ironic connects to Nova",
-         "PROMPT": "The tenant for Ironic to use to connect to Nova",
-         "OPTION_LIST": [],
-         "VALIDATORS": [validators.validate_not_empty],
-         "DEFAULT_VALUE": "service",
-         "MASK_INPUT": False,
-         "LOOSE_VALIDATION": False,
-         "USE_DEFAULT": True,
-         "NEED_CONFIRM": True,
-         "CONDITION": False},
-
-        {"CONF_NAME": "CONFIG_IRONIC_NOVA_PW",
-         "CMD_OPTION": "os-ironic-nova-passwd",
-         "USAGE": "The password to use when Ironic connects to Nova",
-         "PROMPT": "The password for Ironic to use to connect to Nova",
-         "OPTION_LIST": [],
-         "VALIDATORS": [],
-         "DEFAULT_VALUE": "PW_PLACEHOLDER",
-         "PROCESSORS": [processors.process_password],
-         "MASK_INPUT": True,
-         "LOOSE_VALIDATION": False,
-         "USE_DEFAULT": False,
-         "NEED_CONFIRM": True,
-         "CONDITION": False},
-
-        {"CONF_NAME": "CONFIG_IRONIC_DATASTORES",
-         "CMD_OPTION": "os-ironic-datastores",
-         "USAGE": "A comma-separated list of Ironic datastores",
-         "PROMPT": "Enter a comma-separated list of Ironic datastores",
-         "OPTION_LIST": ['cassandra', 'couchbase', 'mongodb', 'mysql',
-                         'postgresql', 'redis'],
-         "VALIDATORS": [validators.validate_multi_options],
-         "DEFAULT_VALUE": "redis",
-         "MASK_INPUT": False,
-         "LOOSE_VALIDATION": False,
-         "USE_DEFAULT": True,
-         "NEED_CONFIRM": False,
-         "CONDITION": False},
     ]
 
     ironic_group = {"GROUP_NAME": "IRONIC",
@@ -130,9 +76,6 @@ def initSequences(controller):
 # -------------------------- step functions --------------------------
 
 def create_manifest(config, messages):
-    if (config['CONFIG_IRONIC_NOVA_USER'] == 'admin' and
-            config['CONFIG_IRONIC_NOVA_PW'] == ''):
-        config['CONFIG_IRONIC_NOVA_PW'] = config['CONFIG_KEYSTONE_ADMIN_PW']
 
     if config['CONFIG_UNSUPPORTED'] != 'y':
         config['CONFIG_STORAGE_HOST'] = config['CONFIG_CONTROLLER_HOST']
