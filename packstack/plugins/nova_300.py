@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Installs and configures nova
+Installs and configures Nova
 """
 
 import os
-import uuid
-import logging
 import platform
 import socket
 
@@ -19,7 +17,7 @@ from packstack.modules.ospluginutils import (NovaConfig, getManifestTemplate,
                                              createFirewallResources)
 
 
-#------------------ oVirt installer initialization ------------------
+# ------------- Nova Packstack Plugin Initialization --------------
 
 PLUGIN_NAME = "OS-Nova"
 PLUGIN_NAME_COLORED = utils.color_text(PLUGIN_NAME, 'blue')
@@ -111,6 +109,21 @@ def initConfig(controller):
              "USE_DEFAULT": False,
              "NEED_CONFIRM": False,
              "CONDITION": False},
+
+            {"CMD_OPTION": "nova-compute-manager",
+             "USAGE": ("The manager that will run nova compute."),
+             "PROMPT": ("Enter the compute manager for nova "
+                        "migration"),
+             "OPTION_LIST": [],
+             "VALIDATORS": [validators.validate_not_empty],
+             "DEFAULT_VALUE": "nova.compute.manager.ComputeManager",
+             "MASK_INPUT": False,
+             "LOOSE_VALIDATION": True,
+             "CONF_NAME": "CONFIG_NOVA_COMPUTE_MANAGER",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": False,
+             "CONDITION": False},
+
         ],
 
         "NOVA_NETWORK": [
@@ -347,7 +360,7 @@ def initSequences(controller):
                            novaapisteps)
 
 
-#------------------------- helper functions -------------------------
+# ------------------------- helper functions -------------------------
 
 def check_ifcfg(host, device):
     """
@@ -381,7 +394,7 @@ def bring_up_ifcfg(host, device):
             raise ScriptRuntimeError(msg)
 
 
-#-------------------------- step functions --------------------------
+# ------------------------ Step Functions -------------------------
 
 def create_ssh_keys(config, messages):
     migration_key = os.path.join(basedefs.VAR_DIR, 'nova_migration_key')
@@ -504,6 +517,10 @@ def create_compute_manifest(config, messages):
     ssh_hostkeys += getManifestTemplate("sshkey.pp")
 
     for host in compute_hosts:
+        if config['CONFIG_IRONIC_INSTALL'] == 'y':
+            compute_manager = 'ironic.nova.compute.manager.ClusteredComputeManager'
+            config['CONFIG_NOVA_COMPUTE_MANAGER'] = compute_manager
+
         config["CONFIG_NOVA_COMPUTE_HOST"] = host
         manifestdata = getManifestTemplate("nova_compute.pp")
 

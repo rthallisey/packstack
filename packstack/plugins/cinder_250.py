@@ -4,29 +4,23 @@
 Installs and configures Cinder
 """
 
-import os
 import re
-import uuid
-import logging
 
 from packstack.installer import exceptions
 from packstack.installer import processors
 from packstack.installer import validators
 from packstack.installer.utils import split_hosts
 
-from packstack.installer import basedefs
 from packstack.installer import utils
 
 
 from packstack.modules.shortcuts import get_mq
 from packstack.modules.ospluginutils import (getManifestTemplate,
-                                             appendManifestFile)
-
-from packstack.installer import exceptions
-from packstack.installer import output_messages
+                                             appendManifestFile,
+                                             createFirewallResources)
 
 
-#------------------ oVirt installer initialization ------------------
+# ------------------ Cinder Packstack Plugin initialization ------------------
 
 PLUGIN_NAME = "OS-Cinder"
 PLUGIN_NAME_COLORED = utils.color_text(PLUGIN_NAME, 'blue')
@@ -125,10 +119,10 @@ def initConfig(controller):
                        "domain:/vol-name "),
              "PROMPT": ("Enter a single or comma separated list of gluster "
                         "volume shares to use with Cinder"),
-             "OPTION_LIST": ["^'([\d]{1,3}\.){3}[\d]{1,3}:/.*'",
-                             "^'[a-zA-Z0-9][\-\.\w]*:/.*'"],
+             "OPTION_LIST": ["^([\d]{1,3}\.){3}[\d]{1,3}:/.*",
+                             "^[a-zA-Z0-9][\-\.\w]*:/.*"],
              "VALIDATORS": [validators.validate_multi_regexp],
-             "PROCESSORS": [processors.process_add_quotes_around_values],
+             "PROCESSORS": [],
              "DEFAULT_VALUE": "",
              "MASK_INPUT": False,
              "LOOSE_VALIDATION": True,
@@ -144,9 +138,9 @@ def initConfig(controller):
                        "mount, eg: ip-address:/export-name "),
              "PROMPT": ("Enter a single or comma seprated list of NFS exports "
                         "to use with Cinder"),
-             "OPTION_LIST": ["^'([\d]{1,3}\.){3}[\d]{1,3}:/.*'"],
+             "OPTION_LIST": ["^([\d]{1,3}\.){3}[\d]{1,3}:/.*"],
              "VALIDATORS": [validators.validate_multi_regexp],
-             "PROCESSORS": [processors.process_add_quotes_around_values],
+             "PROCESSORS": [],
              "DEFAULT_VALUE": "",
              "MASK_INPUT": False,
              "LOOSE_VALIDATION": True,
@@ -452,7 +446,7 @@ def initConfig(controller):
             {"CMD_OPTION": "cinder-netapp-sa-password",
              "USAGE": ("(optional) Password for the NetApp E-Series storage "
                        "array. "
-                        "Defaults to ''."),
+                       "Defaults to ''."),
              "PROMPT": ("Enter a password"),
              "OPTION_LIST": [""],
              "VALIDATORS": [],
@@ -501,7 +495,7 @@ def initConfig(controller):
              "USE_DEFAULT": True,
              "NEED_CONFIRM": False,
              "CONDITION": False},
-         ]
+            ]
     }
 
     conf_groups = [
@@ -526,62 +520,62 @@ def initConfig(controller):
          "POST_CONDITION": False,
          "POST_CONDITION_MATCH": True},
 
-         {"GROUP_NAME": "CINDERGLUSTERMOUNTS",
-          "DESCRIPTION": "Cinder gluster Config parameters",
-          "PRE_CONDITION": check_gluster_options,
-          "PRE_CONDITION_MATCH": True,
-          "POST_CONDITION": False,
-          "POST_CONDITION_MATCH": True},
+        {"GROUP_NAME": "CINDERGLUSTERMOUNTS",
+         "DESCRIPTION": "Cinder gluster Config parameters",
+         "PRE_CONDITION": check_gluster_options,
+         "PRE_CONDITION_MATCH": True,
+         "POST_CONDITION": False,
+         "POST_CONDITION_MATCH": True},
 
-         {"GROUP_NAME": "CINDERNFSMOUNTS",
-          "DESCRIPTION": "Cinder NFS Config parameters",
-          "PRE_CONDITION": check_nfs_options,
-          "PRE_CONDITION_MATCH": True,
-          "POST_CONDITION": False,
-          "POST_CONDITION_MATCH": True},
+        {"GROUP_NAME": "CINDERNFSMOUNTS",
+         "DESCRIPTION": "Cinder NFS Config parameters",
+         "PRE_CONDITION": check_nfs_options,
+         "PRE_CONDITION_MATCH": True,
+         "POST_CONDITION": False,
+         "POST_CONDITION_MATCH": True},
 
-         {"GROUP_NAME": "CINDERNETAPPMAIN",
-          "DESCRIPTION": "Cinder NetApp main configuration",
-          "PRE_CONDITION": check_netapp_options,
-          "PRE_CONDITION_MATCH": True,
-          "POST_CONDITION": False,
-          "POST_CONDITION_MATCH": True},
+        {"GROUP_NAME": "CINDERNETAPPMAIN",
+         "DESCRIPTION": "Cinder NetApp main configuration",
+         "PRE_CONDITION": check_netapp_options,
+         "PRE_CONDITION_MATCH": True,
+         "POST_CONDITION": False,
+         "POST_CONDITION_MATCH": True},
 
-         {"GROUP_NAME": "CINDERNETAPPONTAPISCSI",
-          "DESCRIPTION": "Cinder NetApp ONTAP-iSCSI configuration",
-          "PRE_CONDITION": check_netapp_ontap_iscsi_options,
-          "PRE_CONDITION_MATCH": True,
-          "POST_CONDITION": False,
-          "POST_CONDITION_MATCH": True},
+        {"GROUP_NAME": "CINDERNETAPPONTAPISCSI",
+         "DESCRIPTION": "Cinder NetApp ONTAP-iSCSI configuration",
+         "PRE_CONDITION": check_netapp_ontap_iscsi_options,
+         "PRE_CONDITION_MATCH": True,
+         "POST_CONDITION": False,
+         "POST_CONDITION_MATCH": True},
 
-         {"GROUP_NAME": "CINDERNETAPPNFS",
-          "DESCRIPTION": "Cinder NetApp NFS configuration",
-          "PRE_CONDITION": check_netapp_nfs_settings,
-          "PRE_CONDITION_MATCH": True,
-          "POST_CONDITION": False,
-          "POST_CONDITION_MATCH": True},
+        {"GROUP_NAME": "CINDERNETAPPNFS",
+         "DESCRIPTION": "Cinder NetApp NFS configuration",
+         "PRE_CONDITION": check_netapp_nfs_settings,
+         "PRE_CONDITION_MATCH": True,
+         "POST_CONDITION": False,
+         "POST_CONDITION_MATCH": True},
 
-         {"GROUP_NAME": "CINDERNETAPPISCSI7MODE",
-          "DESCRIPTION": "Cinder NetApp iSCSI & 7-mode configuration",
-          "PRE_CONDITION": check_netapp_7modeiscsi_options,
-          "PRE_CONDITION_MATCH": True,
-          "POST_CONDITION": False,
-          "POST_CONDITION_MATCH": True},
+        {"GROUP_NAME": "CINDERNETAPPISCSI7MODE",
+         "DESCRIPTION": "Cinder NetApp iSCSI & 7-mode configuration",
+         "PRE_CONDITION": check_netapp_7modeiscsi_options,
+         "PRE_CONDITION_MATCH": True,
+         "POST_CONDITION": False,
+         "POST_CONDITION_MATCH": True},
 
-         {"GROUP_NAME": "CINDERNETAPPVSERVER",
-          "DESCRIPTION": "Cinder NetApp vServer configuration",
-          "PRE_CONDITION": check_netapp_vserver_options,
-          "PRE_CONDITION_MATCH": True,
-          "POST_CONDITION": False,
-          "POST_CONDITION_MATCH": True},
+        {"GROUP_NAME": "CINDERNETAPPVSERVER",
+         "DESCRIPTION": "Cinder NetApp vServer configuration",
+         "PRE_CONDITION": check_netapp_vserver_options,
+         "PRE_CONDITION_MATCH": True,
+         "POST_CONDITION": False,
+         "POST_CONDITION_MATCH": True},
 
-         {"GROUP_NAME": "CINDERNETAPPESERIES",
-          "DESCRIPTION": "Cinder NetApp E-Series configuration",
-          "PRE_CONDITION": check_netapp_eseries_options,
-          "PRE_CONDITION_MATCH": True,
-          "POST_CONDITION": False,
-          "POST_CONDITION_MATCH": True},
-    ]
+        {"GROUP_NAME": "CINDERNETAPPESERIES",
+         "DESCRIPTION": "Cinder NetApp E-Series configuration",
+         "PRE_CONDITION": check_netapp_eseries_options,
+         "PRE_CONDITION_MATCH": True,
+         "POST_CONDITION": False,
+         "POST_CONDITION_MATCH": True}
+        ]
     for group in conf_groups:
         params = conf_params[group["GROUP_NAME"]]
         controller.addGroup(group, params)
@@ -592,25 +586,34 @@ def initSequences(controller):
     if config['CONFIG_CINDER_INSTALL'] != 'y':
         return
 
-    config['CONFIG_CINDER_BACKEND'] = str(
+    config['CONFIG_CINDER_BACKEND'] = (
         [i.strip() for i in config['CONFIG_CINDER_BACKEND'].split(',') if i]
     )
 
+    for key in ('CONFIG_CINDER_NETAPP_VOLUME_LIST',
+                'CONFIG_CINDER_GLUSTER_MOUNTS',
+                'CONFIG_CINDER_NFS_MOUNTS'):
+        if key in config:
+            config[key] = [i.strip() for i in config[key].split(',') if i]
+
     cinder_steps = [
         {'title': 'Adding Cinder Keystone manifest entries',
-         'functions': [create_keystone_manifest]},
-        {'title': 'Adding Cinder manifest entries',
-         'functions': [create_manifest]}
+         'functions': [create_keystone_manifest]}
     ]
 
     if 'lvm' in config['CONFIG_CINDER_BACKEND']:
         cinder_steps.append(
             {'title': 'Checking if the Cinder server has a cinder-volumes vg',
              'functions': [check_cinder_vg]})
+
+    cinder_steps.append(
+        {'title': 'Adding Cinder manifest entries',
+         'functions': [create_manifest]}
+    )
     controller.addSequence("Installing OpenStack Cinder", [], [], cinder_steps)
 
 
-#------------------------- helper functions -------------------------
+# ------------------------- helper functions -------------------------
 
 def check_lvm_options(config):
     return (config['CONFIG_CINDER_INSTALL'] == 'y' and
@@ -619,8 +622,7 @@ def check_lvm_options(config):
 
 def check_lvm_vg_options(config):
     return (config['CONFIG_CINDER_INSTALL'] == 'y' and
-            'lvm' in config['CONFIG_CINDER_BACKEND'] and
-            config['CONFIG_CINDER_VOLUMES_CREATE'] == 'y')
+            'lvm' in config['CONFIG_CINDER_BACKEND'])
 
 
 def check_gluster_options(config):
@@ -668,30 +670,39 @@ def check_netapp_eseries_options(config):
             config['CONFIG_CINDER_NETAPP_STORAGE_FAMILY'] == "eseries")
 
 
-#-------------------------- step functions --------------------------
+# -------------------------- step functions --------------------------
 
 def check_cinder_vg(config, messages):
     cinders_volume = 'cinder-volumes'
     if config['CONFIG_UNSUPPORTED'] != 'y':
         config['CONFIG_STORAGE_HOST'] = config['CONFIG_CONTROLLER_HOST']
 
-    if config["CONFIG_CINDER_VOLUMES_CREATE"] != "y":
+    # Do we have a cinder-volumes vg?
+    have_cinders_volume = False
+    server = utils.ScriptRunner(config['CONFIG_STORAGE_HOST'])
+    server.append('vgdisplay %s' % cinders_volume)
+    try:
+        server.execute()
+        have_cinders_volume = True
+    except exceptions.ScriptRuntimeError:
+        pass
+
+    if config["CONFIG_CINDER_VOLUMES_CREATE"] == "n":
         if not have_cinders_volume:
             raise exceptions.MissingRequirements("The cinder server should "
                                                  "contain a cinder-volumes "
                                                  "volume group")
+    match = re.match('^(?P<size>\d+)G$',
+                     config['CONFIG_CINDER_VOLUMES_SIZE'].strip())
+    if not match:
+        msg = 'Invalid Cinder volumes VG size.'
+        raise exceptions.ParamValidationError(msg)
 
-        match = re.match('^(?P<size>\d+)G$',
-                         config['CONFIG_CINDER_VOLUMES_SIZE'].strip())
-        if not match:
-            msg = 'Invalid Cinder volumes VG size.'
-            raise exceptions.ParamValidationError(msg)
+    cinders_volume_size = int(match.group('size')) * 1024
+    cinders_reserve = int(cinders_volume_size * 0.03)
 
-        cinders_volume_size = int(match.group('size')) * 1024
-        cinders_reserve = int(cinders_volume_size * 0.03)
-
-        cinders_volume_size = cinders_volume_size + cinders_reserve
-        config['CONFIG_CINDER_VOLUMES_SIZE'] = 'sM' % cinders_volume_size
+    cinders_volume_size = cinders_volume_size + cinders_reserve
+    config['CONFIG_CINDER_VOLUMES_SIZE'] = '%sM' % cinders_volume_size
 
 
 def create_keystone_manifest(config, messages):
@@ -711,8 +722,7 @@ def create_manifest(config, messages):
     manifestfile = "%s_cinder.pp" % config['CONFIG_STORAGE_HOST']
     manifestdata += getManifestTemplate("cinder.pp")
 
-    backends = config['CONFIG_CINDER_BACKEND'].strip('[]')
-    backends = [i.strip('\' ') for i in backends.split(',')]
+    backends = config['CONFIG_CINDER_BACKEND']
     if 'netapp' in backends:
         backends.remove('netapp')
         puppet_cdot_iscsi = "cinder_netapp_cdot_iscsi.pp"
@@ -740,24 +750,36 @@ def create_manifest(config, messages):
     if config['CONFIG_SWIFT_INSTALL'] == 'y':
         manifestdata += getManifestTemplate('cinder_backup.pp')
 
-    config['FIREWALL_SERVICE_NAME'] = "cinder"
-    config['FIREWALL_PORTS'] = "['3260']"
-    config['FIREWALL_CHAIN'] = "INPUT"
-    config['FIREWALL_PROTOCOL'] = 'tcp'
-    if (config['CONFIG_NOVA_INSTALL'] == 'y' and
+    fw_details = dict()
+    for host in split_hosts(config['CONFIG_COMPUTE_HOSTS']):
+        if (config['CONFIG_NOVA_INSTALL'] == 'y' and
             config['CONFIG_VMWARE_BACKEND'] == 'n'):
-        for host in split_hosts(config['CONFIG_COMPUTE_HOSTS']):
-            config['FIREWALL_ALLOWED'] = "'%s'" % host
-            config['FIREWALL_SERVICE_ID'] = "cinder_%s" % host
-            manifestdata += getManifestTemplate("firewall.pp")
-    else:
-        config['FIREWALL_ALLOWED'] = "'ALL'"
-        config['FIREWALL_SERVICE_ID'] = "cinder_ALL"
-        manifestdata += getManifestTemplate("firewall.pp")
+            key = "cinder_%s" % host
+            fw_details.setdefault(key, {})
+            fw_details[key]['host'] = "%s" % host
+        else:
+            key = "cinder_all"
+            fw_details.setdefault(key, {})
+            fw_details[key]['host'] = "ALL"
+
+        fw_details[key]['service_name'] = "cinder"
+        fw_details[key]['chain'] = "INPUT"
+        fw_details[key]['ports'] = ['3260']
+        fw_details[key]['proto'] = "tcp"
+
+    config['FIREWALL_CINDER_RULES'] = fw_details
+    manifestdata += createFirewallResources('FIREWALL_CINDER_RULES')
+
     # cinder API should be open for everyone
-    config['FIREWALL_SERVICE_NAME'] = "cinder-api"
-    config['FIREWALL_ALLOWED'] = "'ALL'"
-    config['FIREWALL_SERVICE_ID'] = "cinder_API"
-    config['FIREWALL_PORTS'] = "['8776']"
-    manifestdata += getManifestTemplate("firewall.pp")
+    fw_details = dict()
+    key = "cinder_api"
+    fw_details.setdefault(key, {})
+    fw_details[key]['host'] = "ALL"
+    fw_details[key]['service_name'] = "cinder-api"
+    fw_details[key]['chain'] = "INPUT"
+    fw_details[key]['ports'] = ['8776']
+    fw_details[key]['proto'] = "tcp"
+    config['FIREWALL_CINDER_API_RULES'] = fw_details
+    manifestdata += createFirewallResources('FIREWALL_CINDER_API_RULES')
+
     appendManifestFile(manifestfile, manifestdata)

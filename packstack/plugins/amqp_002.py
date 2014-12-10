@@ -1,24 +1,20 @@
 # -*- coding: utf-8 -*-
 
 """
-Installs and configures amqp
+Installs and configures AMQP
 """
-
-import logging
-import uuid
-import os
 
 from packstack.installer import validators
 from packstack.installer import processors
-from packstack.installer import basedefs
 from packstack.installer import utils
 
 from packstack.modules.common import filtered_hosts
 from packstack.modules.ospluginutils import (getManifestTemplate,
-                                             appendManifestFile)
+                                             appendManifestFile,
+                                             createFirewallResources)
 
 
-#------------------ oVirt installer initialization ------------------
+# ------------- AMQP Packstack Plugin Initialization --------------
 
 PLUGIN_NAME = "AMQP"
 PLUGIN_NAME_COLORED = utils.color_text(PLUGIN_NAME, 'blue')
@@ -214,12 +210,12 @@ def initSequences(controller):
     controller.addSequence("Installing AMQP", [], [], amqpsteps)
 
 
-#-------------------------- step functions --------------------------
+# ------------------------ step functions -------------------------
 
 def create_manifest(config, messages):
     server = utils.ScriptRunner(config['CONFIG_AMQP_HOST'])
     if config['CONFIG_AMQP_ENABLE_SSL'] == 'y':
-        config['CONFIG_AMQP_ENABLE_SSL'] = 'true'
+        config['CONFIG_AMQP_ENABLE_SSL'] = True
         config['CONFIG_AMQP_PROTOCOL'] = 'ssl'
         config['CONFIG_AMQP_CLIENTS_PORT'] = "5671"
         if config['CONFIG_AMQP_SSL_SELF_SIGNED'] == 'y':
@@ -234,10 +230,10 @@ def create_manifest(config, messages):
         # Set default values
         config['CONFIG_AMQP_CLIENTS_PORT'] = "5672"
         config['CONFIG_AMQP_SSL_PORT'] = "5671"
-        config['CONFIG_AMQP_SSL_CERT_FILE'] = ""
-        config['CONFIG_AMQP_SSL_KEY_FILE'] = ""
-        config['CONFIG_AMQP_NSS_CERTDB_PW'] = ""
-        config['CONFIG_AMQP_ENABLE_SSL'] = 'false'
+        config['CONFIG_AMQP_SSL_CERT_FILE'] = ''
+        config['CONFIG_AMQP_SSL_KEY_FILE'] = ''
+        config['CONFIG_AMQP_NSS_CERTDB_PW'] = ''
+        config['CONFIG_AMQP_ENABLE_SSL'] = False
         config['CONFIG_AMQP_PROTOCOL'] = 'tcp'
 
     if config['CONFIG_AMQP_ENABLE_AUTH'] == 'n':
@@ -247,14 +243,17 @@ def create_manifest(config, messages):
     manifestfile = "%s_amqp.pp" % config['CONFIG_AMQP_HOST']
     manifestdata = getManifestTemplate('amqp.pp')
 
+    fw_details = dict()
     # All hosts should be able to talk to amqp
-    config['FIREWALL_SERVICE_NAME'] = "amqp"
-    config['FIREWALL_PORTS'] = "['5671', '5672']"
-    config['FIREWALL_CHAIN'] = "INPUT"
-    config['FIREWALL_PROTOCOL'] = 'tcp'
     for host in filtered_hosts(config, exclude=False):
-        config['FIREWALL_ALLOWED'] = "'%s'" % host
-        config['FIREWALL_SERVICE_ID'] = "amqp_%s" % host
-        manifestdata += getManifestTemplate("firewall.pp")
+        key = "amqp_%s" % host
+        fw_details.setdefault(key, {})
+        fw_details[key]['host'] = "%s" % host
+        fw_details[key]['service_name'] = "amqp"
+        fw_details[key]['chain'] = "INPUT"
+        fw_details[key]['ports'] = ['5671', '5672']
+        fw_details[key]['proto'] = "tcp"
+    config['FIREWALL_AMQP_RULES'] = fw_details
 
+    manifestdata += createFirewallResources('FIREWALL_AMQP_RULES')
     appendManifestFile(manifestfile, manifestdata, 'pre')

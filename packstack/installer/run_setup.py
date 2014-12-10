@@ -591,16 +591,17 @@ def _summaryParamsToLog():
 def runSequences():
     controller.runAllSequences()
 
-def _main(configFile=None):
+def _main(options, configFile=None):
     print output_messages.INFO_HEADER
 
     # Get parameters
     _handleParams(configFile)
 
-    # Generate answer file
-    path = _getanswerfilepath()
-    if path:
-        generateAnswerFile(path)
+    # Generate answer file, only if no answer file was provided
+    if not options.answer_file:
+        path = _getanswerfilepath()
+        if path:
+            generateAnswerFile(path)
 
     # Update masked_value_list with user input values
     _updateMaskedValueSet()
@@ -742,7 +743,7 @@ def single_step_install(options):
         overrides[key] = value
 
     generateAnswerFile(answerfilepath, overrides)
-    _main(answerfilepath)
+    _main(options,answerfilepath)
 
 def initCmdLineParser():
     """
@@ -856,7 +857,7 @@ def countCmdLineFlags(options, flag):
     counter = 0
     # make sure only flag was supplied
     for key, value  in options.__dict__.items():
-        if key in (flag, 'debug', 'timeout', 'dry_run'):
+        if key in (flag, 'debug', 'timeout', 'dry_run', 'default_password'):
             next
         # If anything but flag was called, increment
         elif value:
@@ -923,7 +924,12 @@ def main():
             if not answerfilepath:
                 _printAdditionalMessages()
                 return
-            generateAnswerFile(answerfilepath)
+            # We can also override defaults with command line options
+            overrides = {}
+            _set_command_line_values(options)
+            for key,value in commandLineValues.items():
+                overrides[key] = value
+            generateAnswerFile(answerfilepath,overrides)
             _handleParams(answerfilepath)
             generateAnswerFile(options.gen_answer_file)
         # Are we installing an all in one
@@ -941,12 +947,18 @@ def main():
             # Make sure only --answer-file was supplied
             if options.answer_file:
                 validateSingleFlag(options, "answer_file")
+                # If using an answer file, setting a default password
+                # does not really make sense
+                if getattr(options,'default_password',None):
+                        msg = ('Please do not set --default-password '
+                               'when specifying an answer file.')
+                        raise FlagValidationError(msg)
                 confFile = os.path.expanduser(options.answer_file)
                 if not os.path.exists(confFile):
                     raise Exception(output_messages.ERR_NO_ANSWER_FILE % confFile)
             else:
                 _set_command_line_values(options)
-            _main(confFile)
+            _main(options,confFile)
 
     except FlagValidationError as ex:
         optParser.error(str(ex))

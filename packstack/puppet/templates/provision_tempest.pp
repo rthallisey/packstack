@@ -1,51 +1,50 @@
+$provision_tempest_user = hiera('CONFIG_PROVISION_TEMPEST_USER')
+$provision_demo         = hiera('CONFIG_PROVISION_DEMO')
 
-if '%(CONFIG_PROVISION_TEMPEST_USER)s' != '' {
+if $provision_tempest_user != '' {
   ## Keystone
   # non admin user
-  $username                  = '%(CONFIG_PROVISION_TEMPEST_USER)s'
+  $username                  = $provision_tempest_user
 
-  if '%(CONFIG_PROVISION_TEMPEST_USER)s' == 'demo' and
-     '%(CONFIG_PROVISION_DEMO)s' == 'y' {
-    $password = '%(CONFIG_KEYSTONE_DEMO_PW)s'
+  if $provision_tempest_user == 'demo' and
+    $provision_demo == 'y' {
+    $password = hiera('CONFIG_KEYSTONE_DEMO_PW')
   } else {
-    $password = '%(CONFIG_PROVISION_TEMPEST_USER_PW)s'
+    $password = hiera('CONFIG_PROVISION_TEMPEST_USER_PW')
   }
 
-  $tenant_name               = '%(CONFIG_PROVISION_TEMPEST_USER)s'
+  $tenant_name               = $provision_tempest_user
   # admin user
   $admin_username            = 'admin'
-  $admin_password            = '%(CONFIG_KEYSTONE_ADMIN_PW)s'
+  $admin_password            = hiera('CONFIG_KEYSTONE_ADMIN_PW')
   $admin_tenant_name         = 'admin'
-
-  # Heat Using Trusts
-  $heat_using_trusts         = '%(CONFIG_HEAT_USING_TRUSTS)s'
 
   ## Glance
   $image_name                = 'cirros'
-  $image_source              = 'http://download.cirros-cloud.net/0.3.1/cirros-0.3.1-x86_64-disk.img'
+  $image_source              = hiera('CONFIG_PROVISION_CIRROS_URL')
   $image_ssh_user            = 'cirros'
 
   ## Neutron
   $public_network_name       = 'public'
   $public_subnet_name        = 'public_subnet'
-  $floating_range            = '%(CONFIG_PROVISION_DEMO_FLOATRANGE)s'
+  $floating_range            = hiera('CONFIG_PROVISION_DEMO_FLOATRANGE')
   $private_network_name      = 'private'
   $private_subnet_name       = 'private_subnet'
   $fixed_range               = '10.0.0.0/24'
   $router_name               = 'router1'
-  $setup_ovs_bridge          = %(CONFIG_PROVISION_ALL_IN_ONE_OVS_BRIDGE)s
-  $public_bridge_name        = '%(CONFIG_PROVISION_DEMO_FLOATRANGE)s'
+  $setup_ovs_bridge          = hiera('CONFIG_PROVISION_ALL_IN_ONE_OVS_BRIDGE')
+  $public_bridge_name        = hiera('CONFIG_PROVISION_DEMO_FLOATRANGE')
 
   ## Tempest
-  $configure_tempest         = %(CONFIG_PROVISION_TEMPEST)s
+  $configure_tempest         = hiera('CONFIG_PROVISION_TEMPEST')
 
   $image_name_alt            = false
   $image_source_alt          = false
   $image_ssh_user_alt        = false
 
   $identity_uri              = undef
-  $tempest_repo_uri          = '%(CONFIG_PROVISION_TEMPEST_REPO_URI)s'
-  $tempest_repo_revision     = '%(CONFIG_PROVISION_TEMPEST_REPO_REVISION)s'
+  $tempest_repo_uri          = hiera('CONFIG_PROVISION_TEMPEST_REPO_URI')
+  $tempest_repo_revision     = hiera('CONFIG_PROVISION_TEMPEST_REPO_REVISION')
   $tempest_clone_path        = '/var/lib/tempest'
   $tempest_clone_owner       = 'root'
   $setup_venv                = false
@@ -55,7 +54,7 @@ if '%(CONFIG_PROVISION_TEMPEST_USER)s' != '' {
   $glance_available          = true
   $heat_available            = undef
   $horizon_available         = undef
-  $neutron_available         = %(PROVISION_NEUTRON_AVAILABLE)s
+  $neutron_available         = hiera('PROVISION_NEUTRON_AVAILABLE')
   $nova_available            = true
   $swift_available           = undef
 
@@ -68,16 +67,16 @@ if '%(CONFIG_PROVISION_TEMPEST_USER)s' != '' {
   }
 
   keystone_user { $username:
-    ensure      => present,
-    enabled     => true,
-    tenant      => $tenant_name,
-    password    => $password,
+    ensure   => present,
+    enabled  => true,
+    tenant   => $tenant_name,
+    password => $password,
   }
 
-  if $heat_using_trusts == 'y' {
+  if hiera('CONFIG_HEAT_INSTALL') == 'y' {
     keystone_user_role { "${username}@${tenant_name}":
-      ensure  => present,
-      roles   => ['_member_', 'heat_stack_owner'],
+      ensure => present,
+      roles  => ['_member_', 'heat_stack_owner'],
     }
   }
 
@@ -117,11 +116,11 @@ if '%(CONFIG_PROVISION_TEMPEST_USER)s' != '' {
     }
 
     neutron_subnet { $public_subnet_name:
-      ensure          => 'present',
-      cidr            => $floating_range,
-      enable_dhcp     => false,
-      network_name    => $public_network_name,
-      tenant_name     => $admin_tenant_name,
+      ensure       => 'present',
+      cidr         => $floating_range,
+      enable_dhcp  => false,
+      network_name => $public_network_name,
+      tenant_name  => $admin_tenant_name,
     }
 
     neutron_network { $private_network_name:
@@ -161,10 +160,7 @@ if '%(CONFIG_PROVISION_TEMPEST_USER)s' != '' {
   ## Tempest
 
   if $configure_tempest {
-    $tempest_requires = concat([
-                                Keystone_user[$username],
-                                Glance_image[$image_name],
-                                ], $neutron_deps)
+    $tempest_requires = concat([Keystone_user[$username]], $neutron_deps)
 
     class { 'tempest':
       tempest_repo_uri          => $tempest_repo_uri,
@@ -197,38 +193,38 @@ if '%(CONFIG_PROVISION_TEMPEST_USER)s' != '' {
     }
   }
 
-  if %(CONFIG_PROVISION_ALL_IN_ONE_OVS_BRIDGE)s {
+  if hiera('CONFIG_PROVISION_ALL_IN_ONE_OVS_BRIDGE') {
     firewall { '000 nat':
-      chain  => 'POSTROUTING',
-      jump   => 'MASQUERADE',
-      source => $::openstack::provision::floating_range,
+      chain    => 'POSTROUTING',
+      jump     => 'MASQUERADE',
+      source   => $::openstack::provision::floating_range,
       outiface => $::gateway_device,
-      table => 'nat',
-      proto => 'all',
+      table    => 'nat',
+      proto    => 'all',
     }
 
     firewall { '000 forward out':
-      chain => 'FORWARD',
-      action  => 'accept',
-      outiface => '%(CONFIG_NEUTRON_L3_EXT_BRIDGE)s',
-      proto => 'all',
+      chain    => 'FORWARD',
+      action   => 'accept',
+      outiface => hiera('CONFIG_NEUTRON_L3_EXT_BRIDGE'),
+      proto    => 'all',
     }
 
     firewall { '000 forward in':
-      chain => 'FORWARD',
+      chain   => 'FORWARD',
       action  => 'accept',
-      iniface => '%(CONFIG_NEUTRON_L3_EXT_BRIDGE)s',
-      proto => 'all',
+      iniface => hiera('CONFIG_NEUTRON_L3_EXT_BRIDGE'),
+      proto   => 'all',
     }
   }
 } else {
   ## Standalone Tempest installation
   class { 'tempest':
-    tempest_repo_uri      => '%(CONFIG_PROVISION_TEMPEST_REPO_URI)s',
+    tempest_repo_uri      => hiera('CONFIG_PROVISION_TEMPEST_REPO_URI'),
     tempest_clone_path    => '/var/lib/tempest',
     tempest_clone_owner   => 'root',
     setup_venv            => false,
-    tempest_repo_revision => '%(CONFIG_PROVISION_TEMPEST_REPO_REVISION)s',
+    tempest_repo_revision => hiera('CONFIG_PROVISION_TEMPEST_REPO_REVISION'),
     configure_images      => false,
     configure_networks    => false,
     cinder_available      => undef,

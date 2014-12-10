@@ -2,6 +2,7 @@
 import logging
 import os
 import re
+import yaml
 
 from packstack.installer import basedefs
 from packstack.installer.setup_controller import Controller
@@ -11,6 +12,7 @@ controller = Controller()
 
 PUPPET_DIR = os.path.join(basedefs.DIR_PROJECT_DIR, "puppet")
 PUPPET_TEMPLATE_DIR = os.path.join(PUPPET_DIR, "templates")
+HIERA_DEFAULTS_YAML = os.path.join(basedefs.HIERADATA_DIR, "defaults.yaml")
 
 
 class NovaConfig(object):
@@ -72,12 +74,27 @@ manifestfiles = ManifestFiles()
 
 
 def getManifestTemplate(template_name):
+    if not template_name.endswith(".pp"):
+        template_name += ".pp"
     with open(os.path.join(PUPPET_TEMPLATE_DIR, template_name)) as fp:
         return fp.read() % controller.CONF
 
 
 def appendManifestFile(manifest_name, data, marker=''):
     manifestfiles.addFile(manifest_name, marker, data)
+
+
+def generateHieraDataFile():
+    os.mkdir(basedefs.HIERADATA_DIR, 0700)
+    with open(HIERA_DEFAULTS_YAML, 'w') as outfile:
+        outfile.write(yaml.dump(controller.CONF,
+                                explicit_start=True,
+                                default_flow_style=False))
+
+
+def createFirewallResources(hiera_key, default_value='{}'):
+    hiera_function = "hiera('%s', %s)" % (hiera_key, default_value)
+    return "create_resources(packstack::firewall, %s)\n\n" % hiera_function
 
 
 def gethostlist(CONF):

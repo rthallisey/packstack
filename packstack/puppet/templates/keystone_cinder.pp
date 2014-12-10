@@ -1,21 +1,9 @@
 
-class {"cinder::keystone::auth":
-    region           => "%(CONFIG_KEYSTONE_REGION)s",
-    password         => "%(CONFIG_CINDER_KS_PW)s",
-    public_address   => "%(CONFIG_STORAGE_HOST)s",
-    admin_address    => "%(CONFIG_STORAGE_HOST)s",
-    internal_address => "%(CONFIG_STORAGE_HOST)s",
+class { 'cinder::keystone::auth':
+  region           => hiera('CONFIG_KEYSTONE_REGION'),
+  password         => hiera('CONFIG_CINDER_KS_PW'),
+  public_address   => hiera('CONFIG_STORAGE_HOST'),
+  admin_address    => hiera('CONFIG_STORAGE_HOST'),
+  internal_address => hiera('CONFIG_STORAGE_HOST'),
 }
 
-keystone_service { "${cinder::keystone::auth::auth_name}_v2":
-    ensure      => present,
-    type        => "${cinder::keystone::auth::service_type}v2",
-    description => "Cinder Service v2",
-}
-
-keystone_endpoint { "${cinder::keystone::auth::region}/${cinder::keystone::auth::auth_name}_v2":
-    ensure       => present,
-    public_url   => "${cinder::keystone::auth::public_protocol}://${cinder::keystone::auth::public_address}:${cinder::keystone::auth::port}/v2/%%(tenant_id)s",
-    admin_url    => "http://${cinder::keystone::auth::admin_address}:${cinder::keystone::auth::port}/v2/%%(tenant_id)s",
-    internal_url => "http://${cinder::keystone::auth::internal_address}:${cinder::keystone::auth::port}/v2/%%(tenant_id)s",
-}

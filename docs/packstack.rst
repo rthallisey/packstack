@@ -272,6 +272,9 @@ Nova Options
 **CONFIG_NOVA_NETWORK_HOSTS**
     List of IP address of the servers on which to install the Nova Network service.
 
+**CONFIG_NOVA_COMPUTE_MANAGER**
+    The manager the will run nova compute.
+
 **CONFIG_NOVA_DB_PW**
     The password to use for the Nova to access DB.
 

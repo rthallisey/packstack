@@ -4,20 +4,16 @@
 Installs and configures Glance
 """
 
-import uuid
-import logging
-
 from packstack.installer import validators
 from packstack.installer import processors
-from packstack.installer import basedefs
 from packstack.installer import utils
-from packstack.installer.utils import split_hosts
 
 from packstack.modules.shortcuts import get_mq
 from packstack.modules.ospluginutils import (getManifestTemplate,
-                                             appendManifestFile)
+                                             appendManifestFile,
+                                             createFirewallResources)
 
-#------------------ oVirt installer initialization ------------------
+# ------------- Glance Packstack Plugin Initialization --------------
 
 PLUGIN_NAME = "OS-Glance"
 PLUGIN_NAME_COLORED = utils.color_text(PLUGIN_NAME, 'blue')
@@ -53,6 +49,23 @@ def initConfig(controller):
          "USE_DEFAULT": False,
          "NEED_CONFIRM": True,
          "CONDITION": False},
+
+        {"CMD_OPTION": "glance-backend",
+         "USAGE": ("Glance storage backend controls how Glance stores disk "
+                   "images. Supported values: file, swift. Note that Swift "
+                   "installation have to be enabled to have swift backend "
+                   "working. Otherwise Packstack will fallback to 'file'."),
+         "PROMPT": "Glance storage backend",
+         "OPTION_LIST": ["file", "swift"],
+         "VALIDATORS": [validators.validate_options],
+         "PROCESSORS": [process_backend],
+         "DEFAULT_VALUE": "file",
+         "MASK_INPUT": False,
+         "LOOSE_VALIDATION": False,
+         "CONF_NAME": "CONFIG_GLANCE_BACKEND",
+         "USE_DEFAULT": False,
+         "NEED_CONFIRM": False,
+         "CONDITION": False},
     ]
     group = {"GROUP_NAME": "GLANCE",
              "DESCRIPTION": "Glance Config parameters",
@@ -80,7 +93,15 @@ def initSequences(controller):
     controller.addSequence("Installing OpenStack Glance", [], [], glancesteps)
 
 
-#-------------------------- step functions --------------------------
+# ------------------------- helper functions -------------------------
+
+def process_backend(value, param_name, config):
+    if value == 'swift' and config['CONFIG_SWIFT_INSTALL'] != 'y':
+        return 'file'
+    return value
+
+
+# -------------------------- step functions --------------------------
 
 def create_keystone_manifest(config, messages):
     if config['CONFIG_UNSUPPORTED'] != 'y':
@@ -101,12 +122,15 @@ def create_manifest(config, messages):
         mq_template = get_mq(config, "glance_ceilometer")
         manifestdata += getManifestTemplate(mq_template)
 
-    config['FIREWALL_SERVICE_NAME'] = "glance"
-    config['FIREWALL_PORTS'] = "'9292'"
-    config['FIREWALL_CHAIN'] = "INPUT"
-    config['FIREWALL_PROTOCOL'] = 'tcp'
-    config['FIREWALL_ALLOWED'] = "'ALL'"
-    config['FIREWALL_SERVICE_ID'] = "glance_API"
-    manifestdata += getManifestTemplate("firewall.pp")
+    fw_details = dict()
+    key = "glance_api"
+    fw_details.setdefault(key, {})
+    fw_details[key]['host'] = "ALL"
+    fw_details[key]['service_name'] = "glance"
+    fw_details[key]['chain'] = "INPUT"
+    fw_details[key]['ports'] = ['9292']
+    fw_details[key]['proto'] = "tcp"
+    config['FIREWALL_GLANCE_RULES'] = fw_details
 
+    manifestdata += createFirewallResources('FIREWALL_GLANCE_RULES')
     appendManifestFile(manifestfile, manifestdata)

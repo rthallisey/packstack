@@ -4,19 +4,18 @@
 Installs and configures Keystone
 """
 
-import logging
 import uuid
 
 from packstack.installer import validators
 from packstack.installer import processors
-from packstack.installer import basedefs
 from packstack.installer import utils
 
 from packstack.modules.ospluginutils import (getManifestTemplate,
-                                             appendManifestFile)
+                                             appendManifestFile,
+                                             createFirewallResources)
 
 
-#------------------ oVirt installer initialization ------------------
+# ------------- Keystone Packstack Plugin Initialization --------------
 
 PLUGIN_NAME = "OS-Keystone"
 PLUGIN_NAME_COLORED = utils.color_text(PLUGIN_NAME, 'blue')
@@ -97,10 +96,23 @@ def initConfig(controller):
          "PROMPT": "Enter the Keystone token format.",
          "OPTION_LIST": ['UUID', 'PKI'],
          "VALIDATORS": [validators.validate_options],
-         "DEFAULT_VALUE": 'PKI',
+         "DEFAULT_VALUE": 'UUID',
          "MASK_INPUT": False,
          "LOOSE_VALIDATION": False,
          "CONF_NAME": 'CONFIG_KEYSTONE_TOKEN_FORMAT',
+         "USE_DEFAULT": True,
+         "NEED_CONFIRM": False,
+         "CONDITION": False},
+
+        {"CMD_OPTION": "keystone-service-name",
+         "USAGE": "Name of service to use to run keystone (keystone or httpd)",
+         "PROMPT": "Enter the Keystone service name.",
+         "OPTION_LIST": ['keystone', 'httpd'],
+         "VALIDATORS": [validators.validate_options],
+         "DEFAULT_VALUE": "keystone",
+         "MASK_INPUT": False,
+         "LOOSE_VALIDATION": False,
+         "CONF_NAME": 'CONFIG_KEYSTONE_SERVICE_NAME',
          "USE_DEFAULT": True,
          "NEED_CONFIRM": False,
          "CONDITION": False},
@@ -123,18 +135,21 @@ def initSequences(controller):
                            keystonesteps)
 
 
-#-------------------------- step functions --------------------------
+# -------------------------- step functions --------------------------
 
 def create_manifest(config, messages):
     manifestfile = "%s_keystone.pp" % config['CONFIG_CONTROLLER_HOST']
     manifestdata = getManifestTemplate("keystone.pp")
 
-    config['FIREWALL_ALLOWED'] = "'ALL'"
-    config['FIREWALL_SERVICE_NAME'] = "keystone"
-    config['FIREWALL_SERVICE_ID'] = "keystone"
-    config['FIREWALL_PORTS'] = "['5000', '35357']"
-    config['FIREWALL_CHAIN'] = "INPUT"
-    config['FIREWALL_PROTOCOL'] = 'tcp'
-    manifestdata += getManifestTemplate("firewall.pp")
+    fw_details = dict()
+    key = "keystone"
+    fw_details.setdefault(key, {})
+    fw_details[key]['host'] = "ALL"
+    fw_details[key]['service_name'] = "keystone"
+    fw_details[key]['chain'] = "INPUT"
+    fw_details[key]['ports'] = ['5000', '35357']
+    fw_details[key]['proto'] = "tcp"
+    config['FIREWALL_KEYSTONE_RULES'] = fw_details
 
+    manifestdata += createFirewallResources('FIREWALL_KEYSTONE_RULES')
     appendManifestFile(manifestfile, manifestdata)

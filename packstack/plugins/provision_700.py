@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Installs and configures neutron
+Installs and configures Provisioning for demo usage and testing
 """
-
-import logging
-import uuid
 
 from packstack.installer import utils
 from packstack.installer import validators
@@ -16,10 +13,14 @@ from packstack.modules.ospluginutils import (appendManifestFile,
                                              getManifestTemplate)
 
 
-#------------------ oVirt installer initialization ------------------
+# ------------- Provision Packstack Plugin Initialization --------------
 
 PLUGIN_NAME = "OS-Provision"
 PLUGIN_NAME_COLORED = utils.color_text(PLUGIN_NAME, 'blue')
+
+DEMO_CIRRUS_URL = (
+    'http://download.cirros-cloud.net/0.3.3/cirros-0.3.3-x86_64-disk.img'
+)
 
 
 def initConfig(controller):
@@ -78,20 +79,20 @@ def initConfig(controller):
              "CONDITION": False},
 
             {"CMD_OPTION": "provision-tempest-user-passwd",
-            "USAGE": "The password to use for the Tempest Provisioning user",
-            "PROMPT": "Enter the password for the Tempest Provisioning user",
-            "OPTION_LIST": [],
-            "VALIDATORS": [validators.validate_not_empty],
-            "DEFAULT_VALUE": "PW_PLACEHOLDER",
-            "PROCESSORS": [processors.process_password],
-            "MASK_INPUT": True,
-            "LOOSE_VALIDATION": False,
-            "CONF_NAME": "CONFIG_PROVISION_TEMPEST_USER_PW",
-            "USE_DEFAULT": False,
-            "NEED_CONFIRM": True,
-            "CONDITION": False},
+             "USAGE": "The password to use for the Tempest Provisioning user",
+             "PROMPT": "Enter the password for the Tempest Provisioning user",
+             "OPTION_LIST": [],
+             "VALIDATORS": [validators.validate_not_empty],
+             "DEFAULT_VALUE": "PW_PLACEHOLDER",
+             "PROCESSORS": [processors.process_password],
+             "MASK_INPUT": True,
+             "LOOSE_VALIDATION": False,
+             "CONF_NAME": "CONFIG_PROVISION_TEMPEST_USER_PW",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": True,
+             "CONDITION": False},
 
-            ],
+        ],
 
         "PROVISION_DEMO": [
             {"CMD_OPTION": "provision-demo-floatrange",
@@ -106,7 +107,22 @@ def initConfig(controller):
              "USE_DEFAULT": False,
              "NEED_CONFIRM": False,
              "CONDITION": False},
-            ],
+
+            {"CMD_OPTION": "provision-cirros-url",
+             "USAGE": "A URL or local file location for the Cirros demo image "
+                      "used for Glance",
+             "PROMPT": "Enter the URL or local file location for the Cirros "
+                       "image",
+             "OPTION_LIST": False,
+             "VALIDATORS": [validators.validate_not_empty],
+             "DEFAULT_VALUE": DEMO_CIRRUS_URL,
+             "MASK_INPUT": False,
+             "LOOSE_VALIDATION": True,
+             "CONF_NAME": "CONFIG_PROVISION_CIRROS_URL",
+             "USE_DEFAULT": False,
+             "NEED_CONFIRM": False,
+             "CONDITION": False},
+        ],
 
         "TEMPEST_GIT_REFS": [
             {"CMD_OPTION": "provision-tempest-repo-uri",
@@ -161,8 +177,7 @@ def initConfig(controller):
         return (config.get('CONFIG_PROVISION_TEMPEST', 'n') == 'y')
 
     def allow_all_in_one_ovs_bridge(config):
-        return (config['CONFIG_NEUTRON_INSTALL'] == 'y' and
-                config['CONFIG_NEUTRON_L2_PLUGIN'] == 'openvswitch')
+        return (config['CONFIG_NEUTRON_INSTALL'] == 'y')
 
     conf_groups = [
         {"GROUP_NAME": "PROVISION_INIT",
@@ -191,7 +206,7 @@ def initConfig(controller):
          "PRE_CONDITION_MATCH": True,
          "POST_CONDITION": False,
          "POST_CONDITION_MATCH": True},
-        ]
+    ]
     for group in conf_groups:
         paramList = conf_params[group["GROUP_NAME"]]
         controller.addGroup(group, paramList)
@@ -214,7 +229,7 @@ def initSequences(controller):
     config = controller.CONF
 
     if (config['CONFIG_PROVISION_DEMO'] != "y" and
-        config['CONFIG_PROVISION_TEMPEST'] != "y"):
+            config['CONFIG_PROVISION_TEMPEST'] != "y"):
         return
 
     provision_steps = []
@@ -231,9 +246,9 @@ def initSequences(controller):
              'functions': [create_tempest_manifest]}
         )
     provision_steps.append(
-            {'title': 'Adding Provisioning Glance manifest entries',
-             'functions': [create_storage_manifest]}
-        )
+        {'title': 'Adding Provisioning Glance manifest entries',
+         'functions': [create_storage_manifest]}
+    )
 
     marshall_conf_bool(config, 'CONFIG_PROVISION_TEMPEST')
     marshall_conf_bool(config, 'CONFIG_PROVISION_ALL_IN_ONE_OVS_BRIDGE')
@@ -242,18 +257,13 @@ def initSequences(controller):
                            [], [], provision_steps)
 
 
-#------------------------- helper functions -------------------------
+# ------------------------- helper functions -------------------------
 
 def marshall_conf_bool(conf, key):
     if conf[key] == 'y':
-        conf[key] = 'true'
+        conf[key] = True
     else:
-        conf[key] = 'false'
-
-
-def using_heat(config):
-    if config['CONFIG_HEAT_INSTALL'] != "y":
-        config['CONFIG_HEAT_USING_TRUSTS'] = "n"
+        conf[key] = False
 
 
 def using_neutron(config):
@@ -272,11 +282,10 @@ def using_neutron(config):
     marshall_conf_bool(config, 'PROVISION_NEUTRON_AVAILABLE')
 
 
-#-------------------------- step functions --------------------------
+# -------------------------- step functions --------------------------
 
 def create_demo_manifest(config, messages):
     using_neutron(config)
-    using_heat(config)
     manifest_file = '%s_provision_demo.pp' % config['CONFIG_CONTROLLER_HOST']
     manifest_data = getManifestTemplate("provision_demo.pp")
     appendManifestFile(manifest_file, manifest_data)
@@ -286,7 +295,7 @@ def create_storage_manifest(config, messages):
     if config['CONFIG_UNSUPPORTED'] != 'y':
         config['CONFIG_STORAGE_HOST'] = config['CONFIG_CONTROLLER_HOST']
 
-    if config['CONFIG_PROVISION_TEMPEST'] == "y":
+    if config['CONFIG_PROVISION_TEMPEST']:
         template = "provision_tempest_glance.pp"
     else:
         template = "provision_demo_glance.pp"
@@ -297,7 +306,6 @@ def create_storage_manifest(config, messages):
 
 def create_tempest_manifest(config, messages):
     using_neutron(config)
-    using_heat(config)
     manifest_file = '%s_provision_tempest.pp' % \
                     config['CONFIG_CONTROLLER_HOST']
     manifest_data = getManifestTemplate("provision_tempest.pp")

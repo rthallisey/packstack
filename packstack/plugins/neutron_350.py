@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Installs and configures neutron
+Installs and configures Neutron
 """
 
-import logging
-import os
-import re
-import uuid
-
 from packstack.installer import utils
-from packstack.installer import exceptions
 from packstack.installer import validators
 from packstack.installer import processors
 from packstack.installer import output_messages
@@ -23,7 +17,7 @@ from packstack.modules.ospluginutils import (getManifestTemplate,
                                              createFirewallResources)
 
 
-#------------------ oVirt installer initialization ------------------
+# ------------- Neutron Packstack Plugin Initialization --------------
 
 PLUGIN_NAME = "OS-Neutron"
 PLUGIN_NAME_COLORED = utils.color_text(PLUGIN_NAME, 'blue')
@@ -62,14 +56,14 @@ def initConfig(controller):
              "CONDITION": False},
 
             {"CMD_OPTION": "os-neutron-l3-ext-bridge",
-             "USAGE": ("The name of the bridge that the Neutron L3 agent will "
-                       "use for external traffic, or 'provider' if using "
-                       "provider networks"),
-             "PROMPT": ("Enter the bridge the Neutron L3 agent will use for "
-                        "external traffic, or 'provider' if using provider "
-                        "networks"),
+             "USAGE": ("The name of the ovs bridge (or empty for linuxbridge)"
+                       " that the Neutron L3 agent will use for external "
+                       " traffic, or 'provider' using provider networks. "),
+             "PROMPT": ("Enter the ovs bridge the Neutron L3 agent will use "
+                        "for external traffic, or 'provider' if using "
+                        "provider networks."),
              "OPTION_LIST": [],
-             "VALIDATORS": [validators.validate_not_empty],
+             "VALIDATORS": [],
              "DEFAULT_VALUE": "br-ex",
              "MASK_INPUT": False,
              "LOOSE_VALIDATION": True,
@@ -137,8 +131,8 @@ def initConfig(controller):
         "NEUTRON_LB_AGENT": [
             {"CMD_OPTION": "os-neutron-lb-interface-mappings",
              "USAGE": ("A comma separated list of interface mappings for the "
-                       "Neutron linuxbridge plugin (eg. physnet1:br-eth1,"
-                       "physnet2:br-eth2,physnet3:br-eth3)"),
+                       "Neutron linuxbridge plugin (eg. physnet1:eth1,"
+                       "physnet2:eth2,physnet3:eth3)"),
              "PROMPT": ("Enter a comma separated list of interface mappings "
                         "for the Neutron linuxbridge plugin"),
              "OPTION_LIST": [],
@@ -489,7 +483,7 @@ def initSequences(controller):
                            neutron_steps)
 
 
-#------------------------- helper functions -------------------------
+# ------------------------- helper functions -------------------------
 
 def neutron_install(config):
     return config['CONFIG_NEUTRON_INSTALL'] == 'y'
@@ -538,7 +532,7 @@ def get_values(val):
     return [x.strip() for x in val.split(',')] if val else []
 
 
-#-------------------------- step functions --------------------------
+# -------------------------- step functions --------------------------
 
 def create_manifests(config, messages):
     global q_hosts
@@ -603,27 +597,28 @@ def create_manifests(config, messages):
             appendManifestFile(manifest_file, manifest_data, 'neutron')
 
         # We also need to open VXLAN/GRE port for agent
+        manifest_data = ""
         if use_openvswitch_vxlan(config) or use_openvswitch_gre(config):
-            fw_details = dict()
-            key = "neutron_tunnel"
-            fw_details.setdefault(key, {})
-            fw_details[key]['host'] = "ALL"
-            fw_details[key]['service_name'] = "neutron tunnel port"
-            fw_details[key]['chain'] = "INPUT"
+            cf_fw_nt_key = ("FIREWALL_NEUTRON_TUNNEL_RULES_%s"
+                                            % host)
+            for n_host in network_hosts:
+                fw_details = dict()
+                key = "neutron_tunnel_%s_%s" % (host, n_host)
+                fw_details.setdefault(key, {})
+                fw_details[key]['host'] = "%s" % n_host
+                fw_details[key]['service_name'] = "neutron tunnel port"
+                fw_details[key]['chain'] = "INPUT"
+                if use_openvswitch_vxlan(config):
+                    fw_details[key]['proto'] = 'udp'
+                    tun_port = ("%s"
+                                % config['CONFIG_NEUTRON_OVS_VXLAN_UDP_PORT'])
+                else:
+                    fw_details[key]['proto'] = 'gre'
+                    tun_port = None
+                fw_details[key]['ports'] = tun_port
+                config[cf_fw_nt_key] = fw_details
+                manifest_data += createFirewallResources(cf_fw_nt_key)
 
-            if use_openvswitch_vxlan(config):
-                fw_details[key]['proto'] = 'udp'
-                tun_port = "%s" % config['CONFIG_NEUTRON_OVS_VXLAN_UDP_PORT']
-            else:
-                fw_details[key]['proto'] = 'gre'
-                tun_port = None
-
-            fw_details[key]['ports'] = tun_port
-            config['FIREWALL_NEUTRON_TUNNEL_RULES'] = fw_details
-
-            manifest_data = createFirewallResources(
-                'FIREWALL_NEUTRON_TUNNEL_RULES'
-            )
             appendManifestFile(manifest_file, manifest_data, 'neutron')
 
 
@@ -645,17 +640,19 @@ def create_l3_manifests(config, messages):
         manifestdata = getManifestTemplate("neutron_l3.pp")
         manifestfile = "%s_neutron.pp" % (host,)
         appendManifestFile(manifestfile, manifestdata + '\n')
-        ext_bridge = config['CONFIG_NEUTRON_L3_EXT_BRIDGE']
-        mapping = find_mapping(config['CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS'],
-                               ext_bridge) if ext_bridge else None
-        if (config['CONFIG_NEUTRON_L2_AGENT'] == 'openvswitch' and ext_bridge
-                and not mapping):
-            config['CONFIG_NEUTRON_OVS_BRIDGE'] = ext_bridge
-            manifestdata = getManifestTemplate('neutron_ovs_bridge.pp')
-            appendManifestFile(manifestfile, manifestdata + '\n')
+
+        if config['CONFIG_NEUTRON_L2_AGENT'] == 'openvswitch':
+            ext_bridge = config['CONFIG_NEUTRON_L3_EXT_BRIDGE']
+            mapping = find_mapping(
+                config['CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS'],
+                ext_bridge) if ext_bridge else None
+            if (ext_bridge and not mapping):
+                config['CONFIG_NEUTRON_OVS_BRIDGE'] = ext_bridge
+                manifestdata = getManifestTemplate('neutron_ovs_bridge.pp')
+                appendManifestFile(manifestfile, manifestdata + '\n')
 
         if config['CONFIG_NEUTRON_FWAAS'] == 'y':
-#            manifestfile = "%s_neutron_fwaas.pp" % (host,)
+            # manifestfile = "%s_neutron_fwaas.pp" % (host,)
             manifestdata = getManifestTemplate("neutron_fwaas.pp")
             appendManifestFile(manifestfile, manifestdata + '\n')
 
@@ -774,16 +771,16 @@ def create_l2_agent_manifests(config, messages):
         appendManifestFile(manifestfile, manifestdata + "\n")
         # neutron ovs port only on network hosts
         if (
-               agent == "openvswitch" and (
-                   (host in network_hosts and tunnel_types)
-                   or 'vlan' in ovs_type)
-           ):
-                bridge_key = 'CONFIG_NEUTRON_OVS_BRIDGE'
-                iface_key = 'CONFIG_NEUTRON_OVS_IFACE'
-                for if_map in iface_arr:
-                    config[bridge_key], config[iface_key] = if_map.split(':')
-                    manifestdata = getManifestTemplate("neutron_ovs_port.pp")
-                    appendManifestFile(manifestfile, manifestdata + "\n")
+            agent == "openvswitch" and (
+                (host in network_hosts and tunnel_types)
+                or 'vlan' in ovs_type)
+        ):
+            bridge_key = 'CONFIG_NEUTRON_OVS_BRIDGE'
+            iface_key = 'CONFIG_NEUTRON_OVS_IFACE'
+            for if_map in iface_arr:
+                config[bridge_key], config[iface_key] = if_map.split(':')
+                manifestdata = getManifestTemplate("neutron_ovs_port.pp")
+                appendManifestFile(manifestfile, manifestdata + "\n")
         # Additional configurations required for compute hosts and
         # network hosts.
         manifestdata = getManifestTemplate('neutron_bridge_module.pp')

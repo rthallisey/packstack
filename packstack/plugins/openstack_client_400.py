@@ -4,18 +4,15 @@
 Installs and configures an OpenStack Client
 """
 
-import logging
 import os
 
-from packstack.installer import validators
-from packstack.installer import basedefs, output_messages
 from packstack.installer import utils
 
 from packstack.modules.ospluginutils import (getManifestTemplate,
                                              appendManifestFile)
 
 
-#------------------ oVirt installer initialization ------------------
+# ------------- OpenStack Client Packstack Plugin Initialization --------------
 
 PLUGIN_NAME = "OS-Client"
 PLUGIN_NAME_COLORED = utils.color_text(PLUGIN_NAME, 'blue')
@@ -43,7 +40,7 @@ def initSequences(controller):
                            osclientsteps)
 
 
-#-------------------------- step functions --------------------------
+# -------------------------- step functions --------------------------
 
 def create_manifest(config, messages):
     client_host = config['CONFIG_CONTROLLER_HOST'].strip()
@@ -62,7 +59,7 @@ def create_manifest(config, messages):
 
     no_root_allinone = (client_host == utils.get_localhost_ip() and
                         root_home != homedir)
-    config['NO_ROOT_USER_ALLINONE'] = no_root_allinone and 'true' or 'false'
+    config['NO_ROOT_USER_ALLINONE'] = no_root_allinone and True or False
 
     manifestdata = getManifestTemplate("openstack_client.pp")
     appendManifestFile(manifestfile, manifestdata)
