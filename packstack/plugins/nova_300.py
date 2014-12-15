@@ -518,8 +518,8 @@ def create_compute_manifest(config, messages):
 
     for host in compute_hosts:
         if config['CONFIG_IRONIC_INSTALL'] == 'y':
-            compute_manager = 'ironic.nova.compute.manager.ClusteredComputeManager'
-            config['CONFIG_NOVA_COMPUTE_MANAGER'] = compute_manager
+            cm = 'ironic.nova.compute.manager.ClusteredComputeManager'
+            config['CONFIG_NOVA_COMPUTE_MANAGER'] = cm
 
         config["CONFIG_NOVA_COMPUTE_HOST"] = host
         manifestdata = getManifestTemplate("nova_compute.pp")
