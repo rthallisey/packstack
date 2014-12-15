@@ -8,6 +8,8 @@ class { 'glance::api':
   keystone_password   => hiera('CONFIG_GLANCE_KS_PW'),
   pipeline            => 'keystone',
   database_connection => "mysql://glance:${glance_ks_pw}@${glance_mariadb_host}/glance",
+  ironic_enabled      =>  hiera('CONFIG_IRONIC_INSTALL'),
+  known_stores        => ['glance.store.filesystem.Store', 'glance.store.http.Store', 'glance.store.swift.Store'],
   verbose             => true,
   debug               => hiera('CONFIG_DEBUG_MODE'),
 }

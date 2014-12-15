@@ -46,6 +46,35 @@ def initConfig(controller):
          "USE_DEFAULT": True,
          "NEED_CONFIRM": True,
          "CONDITION": False},
+
+        {"CONF_NAME": "CONFIG_IRONIC_BACKEND_DRIVERS",
+         "CMD_OPTION": "os-ironic-backend-drivers",
+         "USAGE": ("A comma separated list of back-end "
+                   "drivers for Ironic"),
+         "PROMPT": "Enter a comma separated list of drivers",
+         "OPTION_LIST": ["agent_ssh", "pxe_ssh"],
+         "VALIDATORS": [validators.validate_multi_options],
+         "DEFAULT_VALUE": "agent_ssh",
+         "MASK_INPUT": False,
+         "LOOSE_VALIDATION": False,
+         "USE_DEFAULT": False,
+         "NEED_CONFIRM": False,
+         "CONDITION": False},
+
+        {"CONF_NAME": "CONFIG_IRONIC_SWIFT_TEMP_URL_KEY",
+         "CMD_OPTION": "os-ironic-swift-temp-url-key",
+         "USAGE": ("The value is used as an temporary url "
+                   "key for Ironic to access Swift"),
+         "PROMPT": "Enter an encryption key",
+         "OPTION_LIST": [],
+         "VALIDATORS": [validators.validate_not_empty],
+         "DEFAULT_VALUE": "PW_PLACEHOLDER",
+         "PROCESSORS": [processors.process_password],
+         "MASK_INPUT": True,
+         "LOOSE_VALIDATION": False,
+         "USE_DEFAULT": True,
+         "NEED_CONFIRM": True,
+         "CONDITION": False},
     ]
 
     ironic_group = {"GROUP_NAME": "IRONIC",
