@@ -116,6 +116,11 @@ def create_manifest(config, messages):
     if config['CONFIG_UNSUPPORTED'] != 'y':
         config['CONFIG_STORAGE_HOST'] = config['CONFIG_CONTROLLER_HOST']
 
+    # Setting the default to 'swift' when Ironic is enabled
+    if config['CONFIG_IRONIC_INSTALL'] == 'y':
+        backend = 'swift'
+        config['CONFIG_GLANCE_BACKEND'] = backend
+
     manifestfile = "%s_glance.pp" % config['CONFIG_STORAGE_HOST']
     manifestdata = getManifestTemplate("glance.pp")
     if config['CONFIG_CEILOMETER_INSTALL'] == 'y':

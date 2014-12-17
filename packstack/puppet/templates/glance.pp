@@ -10,6 +10,7 @@ class { 'glance::api':
   database_connection => "mysql://glance:${glance_ks_pw}@${glance_mariadb_host}/glance",
   ironic_enabled      =>  hiera('CONFIG_IRONIC_INSTALL'),
   known_stores        => ['glance.store.filesystem.Store', 'glance.store.http.Store', 'glance.store.swift.Store'],
+  glance_backend      => hiera('CONFIG_GLANCE_BACKEND'),
   verbose             => true,
   debug               => hiera('CONFIG_DEBUG_MODE'),
 }

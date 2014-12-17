@@ -43,6 +43,10 @@ class { 'nova::compute':
   compute_manager               => hiera('CONFIG_NOVA_COMPUTE_MANAGER'),
 }
 
+if hiera('CONFIG_IRONIC_INSTALL') == 'y' {
+  reserved_host_memory => '0',
+}
+
 # Tune the host with a virtual hosts profile
 package { 'tuned':
   ensure => present,
@@ -51,26 +55,6 @@ package { 'tuned':
 service { 'tuned':
   ensure  => running,
   require => Package['tuned'],
-}
-
-if $::operatingsystem == 'Fedora' and $::operatingsystemrelease == 19 {
-  # older tuned service is sometimes stucked on Fedora 19
-  exec { 'tuned-update':
-    path      => ['/sbin', '/usr/sbin', '/bin', '/usr/bin'],
-    command   => 'yum update -y tuned',
-    logoutput => 'on_failure',
-  }
-
-  exec { 'tuned-restart':
-    path      => ['/sbin', '/usr/sbin', '/bin', '/usr/bin'],
-    command   => 'systemctl restart tuned.service',
-    logoutput => 'on_failure',
-  }
-
-  Service['tuned'] ->
-  Exec['tuned-update'] ->
-  Exec['tuned-restart'] ->
-  Exec['tuned-virtual-host']
 }
 
 exec { 'tuned-virtual-host':

@@ -273,7 +273,7 @@ Nova Options
     List of IP address of the servers on which to install the Nova Network service.
 
 **CONFIG_NOVA_COMPUTE_MANAGER**
-    The manager the will run nova compute.
+    The driver that will manage the running instances from creation to destruction.
 
 **CONFIG_NOVA_DB_PW**
     The password to use for the Nova to access DB.
@@ -308,9 +308,6 @@ Nova Options
 **CONFIG_NOVA_NETWORK_AUTOASSIGNFLOATINGIP**
     Automatically assign a floating IP to new instances.
 
-**CONFIG_NOVA_NETWORK_DEFAULTFLOATINGPOOL**
-    Name of the default floating pool to which the specified floating ranges are added to.
-
 **CONFIG_NOVA_NETWORK_MANAGER**
     Nova network manager.
 
@@ -324,7 +321,7 @@ Nova Options
     First VLAN for private networks.
 
 Ironic Config parameters
------------------------------------
+-----------------------
 
 **CONFIG_IRONIC_DB_PW**
     The password used by Ironic user to authenticate against MariaDB.
@@ -436,6 +433,16 @@ Ceilometer Config Parameters
 
 **CONFIG_CEILOMETER_KS_PW**
     The password to use for Ceilometer to authenticate with Keystone.
+
+**CONFIG_CEILOMETER_COORDINATION_BACKEND**
+    Specify an optional backend for group membership coordination in the alarm evaluator and central
+ agent. Currently the only valid option are 'redis' or 'none'. The default is 'redis'.
+
+**CONFIG_REDIS_HOST**
+    The IP address of the server on which to install Redis, if Redis is being used for coordination.
+
+**CONFIG_REDIS_PORT**
+    The port on which the Redis server will listen, if Redis is being used for coordination.
 
 Heat Config Parameters
 ----------------------
