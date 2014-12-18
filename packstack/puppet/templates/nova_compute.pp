@@ -35,16 +35,20 @@ $vncproxy_proto = $config_horizon_ssl ? {
   default => 'http',
 }
 
+if hiera('CONFIG_IRONIC_INSTALL') == 'y' {
+  $reserved_host_memory = 0
+}
+else {
+  $reserved_host_memory = 512
+}
+
 class { 'nova::compute':
   enabled                       => true,
   vncproxy_host                 => hiera('CONFIG_CONTROLLER_HOST'),
   vncproxy_protocol             => $vncproxy_proto,
   vncserver_proxyclient_address => hiera('CONFIG_NOVA_COMPUTE_HOST'),
   compute_manager               => hiera('CONFIG_NOVA_COMPUTE_MANAGER'),
-}
-
-if hiera('CONFIG_IRONIC_INSTALL') == 'y' {
-  reserved_host_memory => '0',
+  reserved_host_memory          => $reserved_host_memory,
 }
 
 # Tune the host with a virtual hosts profile
